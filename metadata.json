@@ -1,0 +1,6 @@
+{
+  "name": "विश्वकर्मा समाज कनेक्ट (VishwaConnect)",
+  "description": "विश्वकर्मा समाज का आधिकारिक डिजिटल महामंच - सामाजिक संवाद, व्यापार व शिल्प निर्देशिका, वैवाहिक संबंध, मंदिर व युवा सशक्तिकरण।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

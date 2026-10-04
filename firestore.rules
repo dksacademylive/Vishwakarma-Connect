@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function for admin check
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        request.auth.token.email == 'admin@vishwakarma.org'
+      );
+    }
+
+    // Community Posts
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if request.resource.data.content is string &&
+                    request.resource.data.authorName is string;
+      allow update, delete: if true;
+    }
+
+    // Applications for Jobs, Scholarships & Workshops
+    match /applications/{applicationId} {
+      allow read: if true;
+      allow create: if request.resource.data.applicantName is string &&
+                    request.resource.data.phone is string;
+      allow update, delete: if true;
+    }
+
+    // Artisan Directory
+    match /artisans/{artisanId} {
+      allow read: if true;
+      allow create: if request.resource.data.name is string &&
+                    request.resource.data.trade is string;
+      allow update, delete: if true;
+    }
+
+    // Matrimony Profiles
+    match /matrimony/{profileId} {
+      allow read: if true;
+      allow create: if request.resource.data.name is string &&
+                    request.resource.data.subcaste is string;
+      allow update, delete: if true;
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "post": {
+      "title": "Post",
+      "description": "Community social discussion post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorSubcaste": { "type": "string" },
+        "authorCity": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "content": { "type": "string" },
+        "likes": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "timestamp": { "type": "string" },
+        "status": { "type": "string", "enum": ["published", "pending", "hidden"] }
+      },
+      "required": ["id", "authorName", "content", "timestamp"]
+    },
+    "application": {
+      "title": "Application",
+      "description": "Application for Jobs, Merit Scholarships, or Skill Workshops",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["job", "scholarship", "workshop"] },
+        "regNumber": { "type": "string" },
+        "title": { "type": "string" },
+        "applicantName": { "type": "string" },
+        "photo": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "city": { "type": "string" },
+        "details": { "type": "object" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "type", "regNumber", "applicantName", "phone", "status", "createdAt"]
+    },
+    "artisan": {
+      "title": "Artisan",
+      "description": "Artisan directory profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "trade": { "type": "string" },
+        "city": { "type": "string" },
+        "phone": { "type": "string" },
+        "experience": { "type": "string" },
+        "photo": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["approved", "pending", "rejected"] }
+      },
+      "required": ["id", "name", "trade", "city", "phone"]
+    },
+    "matrimonyProfile": {
+      "title": "MatrimonyProfile",
+      "description": "Community matrimonial profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "gender": { "type": "string", "enum": ["male", "female"] },
+        "age": { "type": "number" },
+        "education": { "type": "string" },
+        "city": { "type": "string" },
+        "subcaste": { "type": "string" },
+        "photo": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["approved", "pending", "rejected"] }
+      },
+      "required": ["id", "name", "gender", "age", "education", "city", "subcaste"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": "post",
+      "description": "Community discussion posts"
+    },
+    "/applications/{applicationId}": {
+      "schema": "application",
+      "description": "Job, scholarship, and workshop seat applications"
+    },
+    "/artisans/{artisanId}": {
+      "schema": "artisan",
+      "description": "Verified artisan directory entries"
+    },
+    "/matrimony/{profileId}": {
+      "schema": "matrimonyProfile",
+      "description": "Matrimony candidate profiles"
+    }
+  }
+}
