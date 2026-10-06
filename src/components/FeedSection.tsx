@@ -75,16 +75,16 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 tracking-wide mb-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>अखिल भारतीय विश्वकर्मा संवाद</span>
+            <span>{isHi ? 'अखिल भारतीय विश्वकर्मा संवाद' : 'All India Vishwakarma Connect'}</span>
             <span aria-hidden="true">·</span>
-            <span>जन-संवाद एवं शिल्प विमर्श मंच</span>
+            <span>{isHi ? 'जन-संवाद एवं शिल्प विमर्श मंच' : 'Community & Craft Discourse Forum'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 font-display">
             {isHi ? 'विश्वकर्मा समाज चर्चा एवं विचार मंच' : 'Vishwakarma Community Forum'}
           </h1>
           <p className="text-sm text-stone-600 mt-1 max-w-2xl font-hindi leading-relaxed">
             {isHi
-              ? 'समाज के प्रत्येक बंधु को अपने विचार, पारंपरिक शिल्प कलाकृतियां, सामाजिक समाचार व उत्सव संदेश साझा करने का समर्पित खुला मंच। (यहाँ लिखा गया संदेश तुरंत होम पेज पर भी दिखता है)'
+              ? 'समाज के प्रत्येक बंधु को अपने विचार, पारंपरिक शिल्प कलाकृतियां, सामाजिक समाचार व उत्सव संदेश साझा करने का समर्पित खुला मंच।'
               : 'The dedicated open forum for community discussions, artisan works, social news, and celebrations.'}
           </p>
         </div>
@@ -118,7 +118,7 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
               <button
                 onClick={onOpenCreatePost}
                 className="p-2.5 text-stone-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer shrink-0"
-                title="फोटो जोड़ें"
+                title={isHi ? 'फोटो जोड़ें' : 'Attach Photo'}
               >
                 <ImageIcon className="w-5 h-5" />
               </button>
@@ -245,7 +245,9 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
                     <span className="tabular-nums font-mono">{post.comments.length} {isHi ? 'विचार' : 'Comments'}</span>
                   </div>
                   {copiedId === post.id && (
-                    <span className="text-emerald-700 font-medium">लिंक कॉपी हुआ!</span>
+                    <span className="text-emerald-700 font-medium">
+                      {isHi ? 'लिंक कॉपी हुआ!' : 'Link Copied!'}
+                    </span>
                   )}
                 </div>
 
@@ -457,7 +459,7 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
                 <span>{isHi ? 'विश्वकर्मा बंधु सहायता प्रकोष्ठ' : 'Samaj Relief & Support Fund'}</span>
               </div>
               <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
-                80G छूट मान्य
+                {isHi ? '80G छूट मान्य' : '80G Tax Exempt'}
               </span>
             </div>
 
@@ -468,7 +470,9 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
             </p>
 
             <div className="p-2.5 bg-white/90 rounded-xl border border-amber-200 space-y-1">
-              <div className="text-[11px] text-stone-500 font-hindi">24x7 राष्ट्रीय सहायता हेल्पलाइन:</div>
+              <div className="text-[11px] text-stone-500 font-hindi">
+                {isHi ? '24x7 राष्ट्रीय सहायता हेल्पलाइन:' : '24x7 National Helpline:'}
+              </div>
               <div className="text-amber-950 font-bold font-mono text-sm flex items-center gap-1">
                 <PhoneCall className="w-3.5 h-3.5 text-amber-800" />
                 <span>+91 1800 233 4599</span>
@@ -481,7 +485,7 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
               className="w-full py-2.5 bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 hover:from-red-500 hover:to-amber-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all transform hover:scale-[1.02]"
             >
               <Heart className="w-4 h-4 text-white fill-white" />
-              <span>{isHi ? 'सहयोग / दान करें (Donate Now)' : 'Donate to Relief Fund'}</span>
+              <span>{isHi ? 'सहयोग / दान करें' : 'Donate to Relief Fund'}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>

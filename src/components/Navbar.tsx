@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavTab, Language } from '../types';
-import { Plus, User, Sparkles, Heart, ShieldCheck } from 'lucide-react';
+import { Plus, User, Sparkles, Heart, ShieldCheck, Lock, LogOut } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -11,6 +11,8 @@ interface NavbarProps {
   onOpenCreatePost?: () => void;
   onOpenIdCard: () => void;
   onOpenAdmin?: () => void;
+  isAdminLoggedIn?: boolean;
+  onLogoutAdmin?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -22,6 +24,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCreatePost,
   onOpenIdCard,
   onOpenAdmin,
+  isAdminLoggedIn,
+  onLogoutAdmin,
 }) => {
   const isHi = lang === 'hi';
 
@@ -36,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="text-left group cursor-pointer focus:outline-none"
             >
               <span className="text-xl sm:text-2xl font-bold tracking-tight text-amber-900 group-hover:text-amber-800 transition-colors font-display">
-                विश्वकर्मा समाज
+                {isHi ? 'विश्वकर्मा समाज' : 'Vishwakarma Samaj'}
               </span>
             </button>
           </div>
@@ -153,15 +157,38 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isHi ? 'English' : 'हिंदी'}
             </button>
 
-            {onOpenAdmin && (
-              <button
-                onClick={onOpenAdmin}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-amber-900 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-lg transition-colors cursor-pointer"
-                title="समाज प्रबंधक एवं एडमिन पोर्टल"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-800" />
-                <span className="hidden sm:inline">प्रबंधक</span>
-              </button>
+            {isAdminLoggedIn ? (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={onOpenAdmin}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-lg shadow-2xs transition-all cursor-pointer animate-pulse-subtle"
+                  title={isHi ? 'केंद्रीय एडमिन कंट्रोल पैनल' : 'Master Admin Suite'}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-950" />
+                  <span>{isHi ? '👑 एडमिन पैनल' : '👑 Admin Suite'}</span>
+                </button>
+                {onLogoutAdmin && (
+                  <button
+                    onClick={onLogoutAdmin}
+                    className="p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-semibold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                    title={isHi ? 'एडमिन मोड से लॉगआउट करें (पब्लिक प्रीव्यू देखें)' : 'Logout (View Public Preview)'}
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{isHi ? 'लॉगआउट' : 'Logout'}</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              onOpenAdmin && (
+                <button
+                  onClick={onOpenAdmin}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-lg shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                  title={isHi ? 'प्रबंधक लॉगिन (पासकोड: 1234)' : 'Admin Login (PIN: 1234)'}
+                >
+                  <Lock className="w-3.5 h-3.5 text-amber-950" />
+                  <span>{isHi ? '👑 एडमिन लॉगिन' : '👑 Admin'}</span>
+                </button>
+              )
             )}
 
             <button
@@ -176,15 +203,36 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile secondary navigation strip */}
-        <div className="md:hidden flex items-center gap-3 py-2 overflow-x-auto text-xs font-medium text-stone-600 border-t border-stone-100 scrollbar-none">
-          {onOpenAdmin && (
-            <button
-              onClick={onOpenAdmin}
-              className="whitespace-nowrap px-2.5 py-1 rounded bg-stone-900 text-amber-300 font-bold flex items-center gap-1 text-[11px]"
-            >
-              <ShieldCheck className="w-3 h-3 text-amber-400" />
-              <span>प्रबंधक</span>
-            </button>
+        <div className="md:hidden flex items-center gap-2 py-2 overflow-x-auto text-xs font-medium text-stone-600 border-t border-stone-100 scrollbar-none">
+          {isAdminLoggedIn ? (
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={onOpenAdmin}
+                className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-amber-400 text-stone-950 font-bold flex items-center gap-1 text-[11px]"
+              >
+                <ShieldCheck className="w-3 h-3 text-stone-950" />
+                <span>{isHi ? '👑 एडमिन' : '👑 Admin'}</span>
+              </button>
+              {onLogoutAdmin && (
+                <button
+                  onClick={onLogoutAdmin}
+                  className="whitespace-nowrap px-2 py-1 rounded-lg bg-red-100 text-red-800 font-bold text-[10px]"
+                >
+                  {isHi ? 'लॉगआउट' : 'Exit'}
+                </button>
+              )}
+            </div>
+          ) : (
+            onOpenAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold flex items-center gap-1 text-[11px] shrink-0 border border-amber-500/80 shadow-2xs cursor-pointer"
+                title={isHi ? 'प्रबंधक लॉगिन (पासकोड: 1234)' : 'Admin Login (PIN: 1234)'}
+              >
+                <Lock className="w-3 h-3 text-stone-950" />
+                <span>{isHi ? '👑 एडमिन लॉगिन' : '👑 Admin'}</span>
+              </button>
+            )
           )}
           <button
             onClick={() => setActiveTab('home')}

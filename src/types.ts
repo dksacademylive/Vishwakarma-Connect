@@ -74,6 +74,7 @@ export interface MatrimonialProfile {
   photoPrivacy?: 'public' | 'blur_request' | 'members_only';
   contactPrivacy?: 'public' | 'on_request' | 'guardian_only';
   profileVisibility?: 'active' | 'hidden';
+  firebaseSynced?: boolean;
 }
 
 export interface Temple {
@@ -233,11 +234,18 @@ export interface DonationConfig {
   purposes?: DonationPurposeItem[];
   formTitleHi?: string;
   formSubtitleHi?: string;
+  formTitleEn?: string;
+  formSubtitleEn?: string;
+  customQrImageUrl?: string;
+  qrNotes?: string;
+  allowedPaymentApps?: string[];
 }
 
 export interface IdCardFormConfig {
   titleHi: string;
+  titleEn?: string;
   issuingAuthority: string;
+  issuingAuthorityEn?: string;
   validityNotice: string;
   helplinePhone: string;
   subcastes: string[];

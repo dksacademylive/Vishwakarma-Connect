@@ -1,4 +1,13 @@
-import { JobItem, ScholarshipItem, WorkshopItem, DonationConfig } from '../types';
+import {
+  JobItem,
+  ScholarshipItem,
+  WorkshopItem,
+  DonationConfig,
+  IdCardFormConfig,
+  MatrimonyFormConfig,
+  ArtisanFormConfig,
+  PostFormConfig
+} from '../types';
 
 export const DEFAULT_JOBS: JobItem[] = [
   {

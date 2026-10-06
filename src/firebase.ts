@@ -135,3 +135,95 @@ export async function deletePostFromFirestore(postId: string) {
     return false;
   }
 }
+
+// ==========================================
+// 3. MATRIMONIAL PROFILES SERVICE (Firebase पर शादी डेटा स्टोर)
+// ==========================================
+export interface StoredMatrimonialProfile {
+  id: string;
+  fullName: string;
+  gender: 'groom' | 'bride';
+  age: number;
+  height: string;
+  subcaste: string;
+  gotra: string;
+  motherGotra: string;
+  education: string;
+  occupation: string;
+  annualIncome: string;
+  city: string;
+  state: string;
+  photo: string;
+  kundaliMatch?: string;
+  about: string;
+  familyDetails: string;
+  contactPerson: string;
+  contactNumber: string;
+  email?: string;
+  verified?: boolean;
+  isOtpVerified?: boolean;
+  photoPrivacy?: 'public' | 'blur_request' | 'members_only' | 'private';
+  contactPrivacy?: 'public' | 'on_request' | 'guardian_only';
+  firebaseSynced?: boolean;
+  profileVisibility?: 'active' | 'hidden';
+  createdAt?: any;
+}
+
+export async function addMatrimonialProfileToFirestore(
+  profileData: Omit<StoredMatrimonialProfile, 'id'> | StoredMatrimonialProfile
+) {
+  try {
+    const colRef = collection(db, 'matrimony');
+    const docRef = await addDoc(colRef, {
+      ...profileData,
+      name: profileData.fullName, // Match security rule request.resource.data.name
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (err) {
+    console.error('Error saving matrimony profile to Firestore:', err);
+    return null;
+  }
+}
+
+export async function fetchMatrimonialProfilesFromFirestore(): Promise<StoredMatrimonialProfile[]> {
+  try {
+    const colRef = collection(db, 'matrimony');
+    const q = query(colRef, limit(100));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        fullName: data.fullName || data.name || 'विश्वकर्मा बंधु',
+        gender: data.gender || 'groom',
+        age: Number(data.age) || 26,
+        height: data.height || '5 ft 7 in',
+        subcaste: data.subcaste || 'जांगिड़ (सुथार)',
+        gotra: data.gotra || 'वशिष्ठ',
+        motherGotra: data.motherGotra || 'कौशिक',
+        education: data.education || 'स्नातक',
+        occupation: data.occupation || 'स्वरोजगार',
+        annualIncome: data.annualIncome || '8-12 लाख',
+        city: data.city || 'जयपुर',
+        state: data.state || 'राजस्थान',
+        photo: data.photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500',
+        kundaliMatch: data.kundaliMatch || 'गुण मिलान विचारणीय',
+        about: data.about || 'संस्कारवान, धार्मिक एवं सुशिक्षित परिवार।',
+        familyDetails: data.familyDetails || 'प्रतिष्ठित विश्वकर्मा परिवार।',
+        contactPerson: data.contactPerson || 'अभिभावक',
+        contactNumber: data.contactNumber || '',
+        email: data.email || '',
+        verified: data.verified ?? true,
+        isOtpVerified: data.isOtpVerified ?? true,
+        photoPrivacy: data.photoPrivacy || 'public',
+        contactPrivacy: data.contactPrivacy || 'public',
+        firebaseSynced: true,
+      };
+    }) as StoredMatrimonialProfile[];
+  } catch (err) {
+    console.error('Error fetching matrimony profiles from Firestore:', err);
+    return [];
+  }
+}
+

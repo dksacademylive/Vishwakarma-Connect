@@ -59,6 +59,35 @@ export default function App() {
   const [isCreatePostOpen, setIsCreatePostOpen] = useState<boolean>(false);
   const [isDonateOpen, setIsDonateOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
+  const [adminInitialTab, setAdminInitialTab] = useState<'applications' | 'president' | 'team' | 'office' | 'donation' | 'schemes' | 'events' | 'security'>('applications');
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('vsm_admin_logged_in') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleAdminLoginSuccess = () => {
+    setIsAdminLoggedIn(true);
+    try {
+      localStorage.setItem('vsm_admin_logged_in', 'true');
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminLoggedIn(false);
+    try {
+      localStorage.removeItem('vsm_admin_logged_in');
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  // Only expose admin editing triggers to sections when Admin is actively logged in!
+  const adminEditHandler = isAdminLoggedIn ? () => setIsAdminOpen(true) : undefined;
 
   // Administrative Editable States (President, Team, Contacts)
   const [founderData, setFounderData] = useState<FounderInfo>(() => {
@@ -249,7 +278,42 @@ export default function App() {
         onOpenCreatePost={() => setIsCreatePostOpen(true)}
         onOpenIdCard={() => setActiveTab('idcard')}
         onOpenAdmin={() => setIsAdminOpen(true)}
+        isAdminLoggedIn={isAdminLoggedIn}
+        onLogoutAdmin={handleAdminLogout}
       />
+
+      {/* Prominent Admin Mode Banner: ONLY visible when Admin is logged in */}
+      {isAdminLoggedIn && (
+        <div className="bg-stone-900 text-amber-200 border-b border-amber-600/50 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs font-semibold z-30 sticky top-16 shadow-md font-hindi animate-fadeIn">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="text-amber-300 font-bold text-xs sm:text-sm">
+              {lang === 'hi' ? '👑 एडमिन मोड सक्रिय (Admin Mode Active)' : '👑 Admin Mode Active'}
+            </span>
+            <span className="text-stone-300 hidden md:inline text-xs">
+              {lang === 'hi'
+                ? '— सभी फॉर्म सेटिंग्स व संपादन विकल्प सक्रिय हैं। आम जनता का व्यू देखने हेतु लॉगआउट करें।'
+                : '— All management controls & form options are active. Logout to view public preview.'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsAdminOpen(true)}
+              className="px-3 py-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 rounded-lg font-bold transition-all shadow-2xs cursor-pointer text-xs"
+            >
+              {lang === 'hi' ? 'एडमिन डैशबोर्ड खोलें' : 'Open Admin Suite'}
+            </button>
+            <button
+              onClick={handleAdminLogout}
+              className="px-2.5 py-1 bg-red-950/90 hover:bg-red-900 border border-red-500/50 text-red-200 rounded-lg transition-colors cursor-pointer text-xs font-medium"
+              title="एडमिन सत्र समाप्त कर पब्लिक प्रीव्यू देखें"
+            >
+              {lang === 'hi' ? 'लॉगआउट (पब्लिक प्रीव्यू)' : 'Logout (Public)'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main View Router */}
       <main className="flex-1">
@@ -292,7 +356,7 @@ export default function App() {
             onAddArtisan={handleAddArtisan}
             lang={lang}
             artisanConfig={artisanConfig}
-            onOpenAdmin={() => setIsAdminOpen(true)}
+            onOpenAdmin={adminEditHandler}
           />
         )}
 
@@ -300,7 +364,7 @@ export default function App() {
           <MatrimonialSection
             lang={lang}
             matrimonyConfig={matrimonyConfig}
-            onOpenAdmin={() => setIsAdminOpen(true)}
+            onOpenAdmin={adminEditHandler}
           />
         )}
 
@@ -319,7 +383,7 @@ export default function App() {
         {activeTab === 'youth' && (
           <YouthAndJobs
             lang={lang}
-            onOpenAdmin={() => setIsAdminOpen(true)}
+            onOpenAdmin={adminEditHandler}
             jobs={jobs}
             scholarships={scholarships}
             workshops={workshops}
@@ -330,7 +394,7 @@ export default function App() {
           <IdCardGenerator
             lang={lang}
             idCardConfig={idCardConfig}
-            onOpenAdmin={() => setIsAdminOpen(true)}
+            onOpenAdmin={adminEditHandler}
           />
         )}
       </main>
@@ -342,22 +406,30 @@ export default function App() {
         onAddPost={handleAddPost}
         lang={lang}
         postConfig={postConfig}
-        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenAdmin={adminEditHandler}
       />
 
-      {/* Global Donation & Relief Fund Modal (Triggered from Top Right Header Donate button) */}
+      {/* Global Donation & Relief Fund Modal */}
       <DonationModal
         isOpen={isDonateOpen}
         onClose={() => setIsDonateOpen(false)}
         lang={lang}
         donationConfig={donationConfig}
-        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenAdmin={
+          isAdminLoggedIn
+            ? () => {
+                setAdminInitialTab('donation');
+                setIsAdminOpen(true);
+              }
+            : undefined
+        }
       />
 
       {/* Global Admin Dashboard Modal */}
       <AdminPanelModal
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
+        initialTab={adminInitialTab}
         founderData={founderData}
         onUpdateFounderData={(newData) => setFounderData(newData)}
         teamMembers={teamMembers}
@@ -383,10 +455,20 @@ export default function App() {
         onUpdateArtisanConfig={(cfg) => setArtisanConfig(cfg)}
         postConfig={postConfig}
         onUpdatePostConfig={(cfg) => setPostConfig(cfg)}
+        lang={lang}
+        isAuthenticated={isAdminLoggedIn}
+        onLoginSuccess={handleAdminLoginSuccess}
+        onLogout={handleAdminLogout}
       />
 
       {/* Footer */}
-      <Footer setActiveTab={setActiveTab} lang={lang} orgContact={orgContact} />
+      <Footer
+        setActiveTab={setActiveTab}
+        lang={lang}
+        orgContact={orgContact}
+        onOpenAdmin={() => setIsAdminOpen(true)}
+        isAdminLoggedIn={isAdminLoggedIn}
+      />
     </div>
   );
 }

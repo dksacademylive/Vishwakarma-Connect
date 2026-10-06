@@ -1,14 +1,22 @@
 import React from 'react';
 import { NavTab, Language, OrgContactInfo } from '../types';
-import { Heart } from 'lucide-react';
+import { Heart, ShieldCheck, Lock } from 'lucide-react';
 
 interface FooterProps {
   setActiveTab: (tab: NavTab) => void;
   lang: Language;
   orgContact?: OrgContactInfo;
+  onOpenAdmin?: () => void;
+  isAdminLoggedIn?: boolean;
 }
 
-export const Footer: React.FC<FooterProps> = ({ setActiveTab, lang, orgContact }) => {
+export const Footer: React.FC<FooterProps> = ({
+  setActiveTab,
+  lang,
+  orgContact,
+  onOpenAdmin,
+  isAdminLoggedIn,
+}) => {
   const isHi = lang === 'hi';
   const contact = orgContact || {
     address: 'केंद्रीय विश्वकर्मा भवन, नई दिल्ली - 110001',
@@ -26,7 +34,7 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, lang, orgContact }
           {/* Brand & Devotion */}
           <div className="md:col-span-2 space-y-3">
             <span className="text-xl font-bold text-amber-200 font-display block">
-              विश्वकर्मा समाज कनेक्ट
+              {isHi ? 'विश्वकर्मा समाज कनेक्ट' : 'Vishwakarma Samaj Connect'}
             </span>
             <p className="text-xs text-stone-400 font-hindi leading-relaxed max-w-sm">
               {isHi
@@ -34,7 +42,9 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, lang, orgContact }
                 : 'The official digital collective honoring the ancient crafting, architectural, and modern engineering lineages of Lord Vishwakarma.'}
             </p>
             <div className="text-xs text-amber-400/90 font-hindi">
-              "ॐ श्री विश्वकर्मणे नमः · शिल्पं सर्वकर्मसु कुशलम्"
+              {isHi
+                ? '"ॐ श्री विश्वकर्मणे नमः · शिल्पं सर्वकर्मसु कुशलम्"'
+                : '"Om Shri Vishwakarmaye Namah · Mastery in All Crafts"'}
             </div>
           </div>
 
@@ -126,11 +136,24 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, lang, orgContact }
             </div>
             <div className="text-xs text-stone-400 space-y-1 font-hindi">
               <div>{contact.address}</div>
-              <div>हेल्पलाइन: {contact.helpline}</div>
-              <div>ईमेल: {contact.email}</div>
+              <div>{isHi ? 'हेल्पलाइन:' : 'Helpline:'} {contact.helpline}</div>
+              <div>{isHi ? 'ईमेल:' : 'Email:'} {contact.email}</div>
               <div className="pt-2 text-[11px] text-amber-300/80">
-                रक्तदान आपातकाल: {contact.emergencyPhone}
+                {isHi ? 'रक्तदान आपातकाल:' : 'Blood Donation Emergency:'} {contact.emergencyPhone}
               </div>
+
+              {onOpenAdmin && (
+                <div className="pt-3">
+                  <button
+                    onClick={onOpenAdmin}
+                    className="px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                    title={isHi ? 'केंद्रीय व्यवस्थापक / एडमिन पोर्टल (पासकोड: 1234)' : 'Admin Portal (Passcode: 1234)'}
+                  >
+                    <ShieldCheck className="w-4 h-4 text-stone-950" />
+                    <span>{isHi ? '👑 एडमिन लॉगिन (पासकोड: 1234)' : '👑 Admin Login (PIN: 1234)'}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -138,10 +161,24 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, lang, orgContact }
         {/* Bottom Bar */}
         <div className="pt-6 border-t border-stone-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
           <div>
-            © 2026 विश्वकर्मा समाज महासंघ (VishwaConnect). सर्वाधिकार सुरक्षित।
+            {isHi
+              ? '© 2026 विश्वकर्मा समाज महासंघ (VishwaConnect). सर्वाधिकार सुरक्षित।'
+              : '© 2026 Vishwakarma Samaj Federation (VishwaConnect). All rights reserved.'}
           </div>
-          <div className="flex items-center gap-1 text-stone-400">
-            <span>समाज सेवा एवं संस्कृति संरक्षण हेतु समर्पित</span>
+          <div className="flex items-center gap-3 text-stone-400">
+            <span>
+              {isHi
+                ? 'समाज सेवा एवं संस्कृति संरक्षण हेतु समर्पित'
+                : 'Dedicated to community service and cultural heritage'}
+            </span>
+            {onOpenAdmin && !isAdminLoggedIn && (
+              <button
+                onClick={onOpenAdmin}
+                className="text-amber-400/90 hover:text-amber-300 underline font-semibold cursor-pointer text-[11px]"
+              >
+                {isHi ? 'व्यवस्थापक पोर्टल (1234)' : 'Admin Portal (1234)'}
+              </button>
+            )}
           </div>
         </div>
       </div>

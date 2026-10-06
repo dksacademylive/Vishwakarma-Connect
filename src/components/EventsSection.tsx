@@ -242,15 +242,19 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
           <div className="space-y-3 max-w-2xl">
             <div className="flex items-center gap-2 text-xs font-bold text-amber-400 tracking-wide uppercase">
               <Calendar className="w-4 h-4 text-amber-400" />
-              <span>अखिल भारतीय विश्वकर्मा समाज आयोजन एवं महामहोत्सव</span>
+              <span>
+                {isHi
+                  ? 'अखिल भारतीय विश्वकर्मा समाज आयोजन एवं महामहोत्सव'
+                  : 'All India Vishwakarma Samaj Events & Conventions'}
+              </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold font-display text-white">
-              {isHi ? 'समाज के प्रमुख उत्सव, सम्मेलन व कार्यशालाएं' : 'Community Events, Conventions & Festivals'}
+              {isHi ? 'समाज के प्रमुख उत्सव, सम्मेलन व कार्यशालाएं' : 'Community Events, Conventions & Workshops'}
             </h1>
             <p className="text-xs sm:text-sm text-stone-300 font-hindi leading-relaxed">
               {isHi
                 ? 'देशभर में आयोजित होने वाले विश्वकर्मा जयंती महोत्सव, युवक-युवती परिचय सम्मेलन, एमएसएमई शिल्प सम्मेलनों एवं शिक्षा अलंकरणों की सम्पूर्ण विवरणिका। ऑनलाइन सम्मिलित हों और तुरंत ईमेल पर ई-पास प्राप्त करें।'
-                : 'Complete registry of nationwide festivals, matrimonial meets, and entrepreneurship summits. Join online and receive instant registration confirmation on your email.'}
+                : 'Complete registry of nationwide festivals, matrimonial meets, craft workshops, and entrepreneurship summits. Join online and receive instant registration confirmation on your email.'}
             </p>
           </div>
 
@@ -278,7 +282,11 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             />
           </div>
           <div className="text-xs font-semibold text-stone-500 flex items-center self-center px-1">
-            <span>{filteredEvents.length} आयोजन उपलब्ध</span>
+            <span>
+              {isHi
+                ? `${filteredEvents.length} आयोजन उपलब्ध`
+                : `${filteredEvents.length} Events Available`}
+            </span>
           </div>
         </div>
 
@@ -325,7 +333,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                   {event.isFeatured && (
                     <span className="bg-red-600/90 text-white text-[11px] font-bold px-3 py-1 rounded-full backdrop-blur-xs flex items-center gap-1 shadow-xs">
                       <Sparkles className="w-3 h-3" />
-                      <span>विराट राष्ट्रीय महोत्सव</span>
+                      <span>{isHi ? 'विराट राष्ट्रीय महोत्सव' : 'National Grand Convention'}</span>
                     </span>
                   )}
                 </div>
@@ -355,13 +363,13 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-amber-800 shrink-0" />
                     <span className="truncate">
-                      <strong>स्थान:</strong> {event.venue}, {event.city}
+                      <strong>{isHi ? 'स्थान:' : 'Venue:'}</strong> {event.venue}, {event.city}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 sm:justify-end">
                     <Users className="w-4 h-4 text-emerald-700 shrink-0" />
                     <span>
-                      <strong>अपेक्षित बंधु:</strong> {event.attendeesCount}+
+                      <strong>{isHi ? 'अपेक्षित बंधु:' : 'Expected Attendees:'}</strong> {event.attendeesCount}+
                     </span>
                   </div>
                 </div>
@@ -377,7 +385,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                 {event.highlights && event.highlights.length > 0 && (
                   <div className="space-y-1.5 pt-1">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-amber-900">
-                      आयोजन की मुख्य विशेषताएं (Highlights):
+                      {isHi ? 'आयोजन की मुख्य विशेषताएं:' : 'Key Highlights:'}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {event.highlights.map((hl, idx) => (
@@ -396,7 +404,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     <div className="flex items-center gap-1.5">
                       <Award className="w-3.5 h-3.5 text-amber-800 shrink-0" />
                       <span>
-                        <strong>मुख्य अतिथि:</strong> {event.chiefGuest}
+                        <strong>{isHi ? 'मुख्य अतिथि:' : 'Chief Guest:'}</strong> {event.chiefGuest}
                       </span>
                     </div>
                   )}
@@ -415,10 +423,14 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
               <button
                 onClick={() => handleShareEvent(event)}
                 className="p-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0"
-                title="विवरण कॉपी व शेयर करें"
+                title={isHi ? 'विवरण कॉपी व शेयर करें' : 'Copy & Share Details'}
               >
                 <Share2 className="w-4 h-4" />
-                <span>{copiedEventId === event.id ? 'कॉपी हो गया!' : 'शेयर'}</span>
+                <span>
+                  {copiedEventId === event.id
+                    ? (isHi ? 'कॉपी हो गया!' : 'Copied!')
+                    : (isHi ? 'शेयर' : 'Share')}
+                </span>
               </button>
 
               <button
@@ -437,7 +449,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                 className="flex-1 py-3 px-5 bg-gradient-to-r from-amber-800 to-amber-900 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer transform hover:scale-[1.01]"
               >
                 <Ticket className="w-4 h-4" />
-                <span>सम्मिलित हों / ई-पास प्राप्त करें</span>
+                <span>{isHi ? 'सम्मिलित हों / ई-पास प्राप्त करें' : 'RSVP / Get E-Pass'}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -455,7 +467,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             <div className="flex items-start justify-between border-b border-stone-100 pb-4">
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">
-                  आयोजन सहभागिता पंजीकरण
+                  {isHi ? 'आयोजन सहभागिता पंजीकरण' : 'Event RSVP Registration'}
                 </span>
                 <h3 className="text-xl font-bold font-display text-stone-900 leading-snug">
                   {selectedEventForJoin.title}
@@ -478,7 +490,15 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             <div className="p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl flex items-start gap-3">
               <Mail className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
               <div className="text-xs text-emerald-950 leading-relaxed font-medium">
-                <strong>स्वचालित ईमेल पुष्टिकरण:</strong> फॉर्म सबमिट करते ही आपका आधिकारिक <strong>ई-प्रवेश पत्र (E-Pass)</strong> और पुष्टि विवरण आपके द्वारा दर्ज किए गए <strong>ईमेल पते</strong> पर स्वतः प्रेषित कर दिया जाएगा।
+                {isHi ? (
+                  <>
+                    <strong>स्वचालित ईमेल पुष्टिकरण:</strong> फॉर्म सबमिट करते ही आपका आधिकारिक <strong>ई-प्रवेश पत्र (E-Pass)</strong> और पुष्टि विवरण आपके द्वारा दर्ज किए गए <strong>ईमेल पते</strong> पर स्वतः प्रेषित कर दिया जाएगा।
+                  </>
+                ) : (
+                  <>
+                    <strong>Automated Email Confirmation:</strong> Upon submission, your official <strong>E-Pass</strong> and confirmation details will be instantly sent to your <strong>email address</strong>.
+                  </>
+                )}
               </div>
             </div>
 
@@ -487,21 +507,21 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-stone-700">
-                    पूरा नाम (Full Name) *
+                    {isHi ? 'पूरा नाम *' : 'Full Name *'}
                   </label>
                   <input
                     type="text"
                     required
                     value={joinForm.fullName}
                     onChange={(e) => setJoinForm({ ...joinForm, fullName: e.target.value })}
-                    placeholder="उदा. रमेश कुमार शर्मा"
+                    placeholder={isHi ? 'उदा. रमेश कुमार शर्मा' : 'e.g. Ramesh Kumar Sharma'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-stone-700">
-                    मोबाइल / WhatsApp नंबर *
+                    {isHi ? 'मोबाइल / व्हाट्सएप नंबर *' : 'Mobile / WhatsApp Number *'}
                   </label>
                   <input
                     type="tel"
@@ -509,7 +529,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     pattern="[0-9]{10}"
                     value={joinForm.mobile}
                     onChange={(e) => setJoinForm({ ...joinForm, mobile: e.target.value })}
-                    placeholder="10 अंकों का मोबाइल नंबर"
+                    placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 font-mono"
                   />
                 </div>
@@ -518,46 +538,50 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
               {/* Email Address - Essential for automatic sending */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700 flex items-center justify-between">
-                  <span>ईमेल पता (Email Address) *</span>
-                  <span className="text-[10px] text-emerald-700 font-bold">ई-पास इसी पर भेजा जाएगा</span>
+                  <span>{isHi ? 'ईमेल पता *' : 'Email Address *'}</span>
+                  <span className="text-[10px] text-emerald-700 font-bold">
+                    {isHi ? 'ई-पास इसी पर भेजा जाएगा' : 'E-Pass will be sent here'}
+                  </span>
                 </label>
                 <input
                   type="email"
                   required
                   value={joinForm.email}
                   onChange={(e) => setJoinForm({ ...joinForm, email: e.target.value })}
-                  placeholder="उदा. yourname@gmail.com"
+                  placeholder="yourname@example.com"
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 font-mono"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">शहर (City) *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'शहर *' : 'City *'}</label>
                   <input
                     type="text"
                     required
                     value={joinForm.city}
                     onChange={(e) => setJoinForm({ ...joinForm, city: e.target.value })}
-                    placeholder="उदा. जयपुर"
+                    placeholder={isHi ? 'उदा. जयपुर' : 'e.g. Jaipur'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">राज्य (State) *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'राज्य *' : 'State *'}</label>
                   <input
                     type="text"
                     required
                     value={joinForm.state}
                     onChange={(e) => setJoinForm({ ...joinForm, state: e.target.value })}
-                    placeholder="उदा. राजस्थान"
+                    placeholder={isHi ? 'उदा. राजस्थान' : 'e.g. Rajasthan'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">कुल सदस्य संख्या *</label>
+                  <label className="text-xs font-bold text-stone-700">
+                    {isHi ? 'कुल सदस्य संख्या *' : 'Total Attendees *'}
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -572,13 +596,17 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700">
-                  विशिष्ट आवश्यकता अथवा संदेश (वैकल्पिक)
+                  {isHi ? 'विशिष्ट आवश्यकता अथवा संदेश (वैकल्पिक)' : 'Special Requests or Notes (Optional)'}
                 </label>
                 <textarea
                   rows={2}
                   value={joinForm.specialRequirement}
                   onChange={(e) => setJoinForm({ ...joinForm, specialRequirement: e.target.value })}
-                  placeholder="आवास व्यवस्था, रेलवे स्टेशन से पिकअप अथवा अन्य सुझाव..."
+                  placeholder={
+                    isHi
+                      ? 'आवास व्यवस्था, रेलवे स्टेशन से पिकअप अथवा अन्य सुझाव...'
+                      : 'Accommodation, transport pickup, or dietary preferences...'
+                  }
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                 />
               </div>
@@ -589,7 +617,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                   onClick={() => setSelectedEventForJoin(null)}
                   className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
-                  रद्द करें
+                  {isHi ? 'रद्द करें' : 'Cancel'}
                 </button>
 
                 <button
@@ -597,7 +625,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                   className="px-6 py-2.5 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all"
                 >
                   <Send className="w-4 h-4" />
-                  <span>पंजीकरण करें एवं ईमेल प्राप्त करें</span>
+                  <span>{isHi ? 'पंजीकरण करें एवं ई-पास प्राप्त करें' : 'Register & Get E-Pass'}</span>
                 </button>
               </div>
             </form>
@@ -617,9 +645,19 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                 <Check className="w-5 h-5" />
               </div>
               <div className="text-xs sm:text-sm leading-relaxed">
-                <div className="font-bold">सफलतापूर्वक पंजीकृत! Confirmation Email Sent</div>
+                <div className="font-bold">
+                  {isHi ? 'सफलतापूर्वक पंजीकृत! पुष्टि ईमेल प्रेषित' : 'Registration Successful! Confirmation Email Sent'}
+                </div>
                 <div className="text-emerald-100 text-xs">
-                  आपका ई-पास स्वचालित रूप से <strong>{confirmedPass.registration.email}</strong> पर भेज दिया गया है।
+                  {isHi ? (
+                    <>
+                      आपका ई-पास स्वचालित रूप से <strong>{confirmedPass.registration.email}</strong> पर भेज दिया गया है।
+                    </>
+                  ) : (
+                    <>
+                      Your E-Pass has been automatically sent to <strong>{confirmedPass.registration.email}</strong>.
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -633,15 +671,17 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
               <div className="flex items-center justify-between border-b-2 border-amber-800/40 pb-3">
                 <div>
                   <div className="text-[11px] font-bold text-amber-900">
-                    ॐ श्री विश्वकर्मणे नमः · आधिकारिक आमंत्रण व ई-प्रवेश पत्र
+                    {isHi
+                      ? 'ॐ श्री विश्वकर्मणे नमः · आधिकारिक आमंत्रण व ई-प्रवेश पत्र'
+                      : 'Om Shri Vishwakarma Namah · Official E-Pass & Invitation'}
                   </div>
                   <div className="text-xs text-stone-500 font-mono">
-                    पास क्रमांक: <strong>{confirmedPass.registration.passNumber}</strong>
+                    {isHi ? 'पास क्रमांक:' : 'Pass No:'} <strong>{confirmedPass.registration.passNumber}</strong>
                   </div>
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
-                    स्वीकृत व सत्यापित
+                    {isHi ? 'स्वीकृत व सत्यापित' : 'Verified & Approved'}
                   </span>
                 </div>
               </div>
@@ -659,25 +699,25 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
               {/* Details Grid */}
               <div className="grid grid-cols-2 gap-3 text-xs text-stone-700 bg-white/80 p-3.5 rounded-2xl border border-amber-200">
                 <div>
-                  <span className="text-stone-500 block text-[11px]">सहभागी का नाम:</span>
+                  <span className="text-stone-500 block text-[11px]">{isHi ? 'सहभागी का नाम:' : 'Attendee Name:'}</span>
                   <span className="font-bold text-stone-900 text-sm">
                     {confirmedPass.registration.fullName}
                   </span>
                 </div>
                 <div>
-                  <span className="text-stone-500 block text-[11px]">कुल सदस्य:</span>
+                  <span className="text-stone-500 block text-[11px]">{isHi ? 'कुल सदस्य:' : 'Total Members:'}</span>
                   <span className="font-bold text-stone-900 text-sm">
-                    {confirmedPass.registration.attendeesCount} व्यक्ति
+                    {confirmedPass.registration.attendeesCount} {isHi ? 'व्यक्ति' : 'Persons'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-stone-500 block text-[11px]">दिनांक व समय:</span>
+                  <span className="text-stone-500 block text-[11px]">{isHi ? 'दिनांक व समय:' : 'Date & Time:'}</span>
                   <span className="font-bold text-stone-900">
                     {confirmedPass.event.date}
                   </span>
                 </div>
                 <div>
-                  <span className="text-stone-500 block text-[11px]">स्थान व नगर:</span>
+                  <span className="text-stone-500 block text-[11px]">{isHi ? 'स्थान व नगर:' : 'Venue & City:'}</span>
                   <span className="font-bold text-stone-900 truncate block">
                     {confirmedPass.event.venue}, {confirmedPass.event.city}
                   </span>
@@ -695,13 +735,17 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     className="w-16 h-16 rounded-lg border border-amber-300 bg-white p-1"
                   />
                   <div className="text-[11px] text-stone-600 leading-tight">
-                    <div className="font-bold text-stone-900">गेट एंट्री क्यूआर कोड</div>
-                    <div>प्रवेश द्वार पर यह पास मोबाइल पर अथवा प्रिंट करके दिखाएं।</div>
+                    <div className="font-bold text-stone-900">{isHi ? 'गेट एंट्री क्यूआर कोड' : 'Gate Entry QR Code'}</div>
+                    <div>
+                      {isHi
+                        ? 'प्रवेश द्वार पर यह पास मोबाइल पर अथवा प्रिंट करके दिखाएं।'
+                        : 'Present this digital pass or printed copy at the entrance.'}
+                    </div>
                   </div>
                 </div>
 
                 <div className="text-right text-[10px] text-stone-500">
-                  <div>पंजीकरण तिथि:</div>
+                  <div>{isHi ? 'पंजीकरण तिथि:' : 'Registration Date:'}</div>
                   <div className="font-mono font-bold text-stone-800">
                     {confirmedPass.registration.registeredAt}
                   </div>
@@ -716,14 +760,14 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                 className="py-2.5 px-4 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>ई-पास प्रिंट / PDF सेव करें</span>
+                <span>{isHi ? 'ई-पास प्रिंट / PDF सेव करें' : 'Print / Save E-Pass PDF'}</span>
               </button>
 
               <button
                 onClick={() => setConfirmedPass(null)}
                 className="py-2.5 px-6 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
-                समाप्त करें
+                {isHi ? 'समाप्त करें' : 'Close'}
               </button>
             </div>
           </div>
@@ -739,10 +783,10 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             <div className="flex items-start justify-between border-b border-stone-100 pb-3">
               <div>
                 <span className="text-[11px] font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">
-                  नया समाज आयोजन प्रविष्टि
+                  {isHi ? 'नया समाज आयोजन प्रविष्टि' : 'New Community Event Entry'}
                 </span>
                 <h3 className="text-xl font-bold font-display text-stone-900 mt-1">
-                  समाज आयोजन की सूचना प्रकाशित करें
+                  {isHi ? 'समाज आयोजन की सूचना प्रकाशित करें' : 'Publish Community Event Announcement'}
                 </h3>
               </div>
               <button
@@ -759,38 +803,42 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             <form onSubmit={handleCreateEventSubmit} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700">
-                  आयोजन का नाम (Event Title) *
+                  {isHi ? 'आयोजन का नाम *' : 'Event Title *'}
                 </label>
                 <input
                   type="text"
                   required
                   value={newEventForm.title}
                   onChange={(e) => setNewEventForm({ ...newEventForm, title: e.target.value })}
-                  placeholder="उदा. अखिल भारतीय विश्वकर्मा प्रतिभा अलंकरण समारोह 2026"
+                  placeholder={
+                    isHi
+                      ? 'उदा. अखिल भारतीय विश्वकर्मा प्रतिभा अलंकरण समारोह 2026'
+                      : 'e.g. All India Vishwakarma Talent Award Ceremony 2026'
+                  }
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">दिनांक (Date) *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'दिनांक *' : 'Date *'}</label>
                   <input
                     type="text"
                     required
                     value={newEventForm.date}
                     onChange={(e) => setNewEventForm({ ...newEventForm, date: e.target.value })}
-                    placeholder="उदा. 25 अक्टूबर 2026"
+                    placeholder={isHi ? 'उदा. 25 अक्टूबर 2026' : 'e.g. 25 October 2026'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">समय (Timings)</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'समय' : 'Timings'}</label>
                   <input
                     type="text"
                     value={newEventForm.time}
                     onChange={(e) => setNewEventForm({ ...newEventForm, time: e.target.value })}
-                    placeholder="उदा. प्रातः 10:00 से सायं 05:00"
+                    placeholder={isHi ? 'उदा. प्रातः 10:00 से सायं 05:00' : 'e.g. 10:00 AM to 05:00 PM'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
@@ -798,27 +846,39 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">श्रेणी (Category) *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'श्रेणी *' : 'Category *'}</label>
                   <select
                     value={newEventForm.category}
                     onChange={(e) => setNewEventForm({ ...newEventForm, category: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   >
-                    <option value="धार्मिक व सांस्कृतिक">धार्मिक व सांस्कृतिक</option>
-                    <option value="वैवाहिक सम्मेलन">वैवाहिक सम्मेलन</option>
-                    <option value="व्यापार व करियर">व्यापार व MSME</option>
-                    <option value="शिक्षा व छात्रवृत्ति">शिक्षा व छात्रवृत्ति</option>
-                    <option value="शिल्प व कार्यशाला">शिल्प व कार्यशाला</option>
+                    <option value="धार्मिक व सांस्कृतिक">
+                      {isHi ? 'धार्मिक व सांस्कृतिक' : 'Religious & Cultural'}
+                    </option>
+                    <option value="वैवाहिक सम्मेलन">
+                      {isHi ? 'वैवाहिक सम्मेलन' : 'Matrimonial Meet'}
+                    </option>
+                    <option value="व्यापार व करियर">
+                      {isHi ? 'व्यापार व MSME' : 'Business & Career'}
+                    </option>
+                    <option value="शिक्षा व छात्रवृत्ति">
+                      {isHi ? 'शिक्षा व छात्रवृत्ति' : 'Education & Scholarships'}
+                    </option>
+                    <option value="शिल्प व कार्यशाला">
+                      {isHi ? 'शिल्प व कार्यशाला' : 'Craft & Workshops'}
+                    </option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">अपेक्षित उपस्थिति</label>
+                  <label className="text-xs font-bold text-stone-700">
+                    {isHi ? 'अपेक्षित उपस्थिति' : 'Expected Attendees'}
+                  </label>
                   <input
                     type="number"
                     value={newEventForm.attendeesCount}
                     onChange={(e) => setNewEventForm({ ...newEventForm, attendeesCount: Number(e.target.value) })}
-                    placeholder="उदा. 1000"
+                    placeholder="1000"
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 font-mono"
                   />
                 </div>
@@ -826,25 +886,25 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">स्थान (Venue) *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'स्थान *' : 'Venue *'}</label>
                   <input
                     type="text"
                     required
                     value={newEventForm.venue}
                     onChange={(e) => setNewEventForm({ ...newEventForm, venue: e.target.value })}
-                    placeholder="उदा. श्री विश्वकर्मा मंदिर प्रांगण"
+                    placeholder={isHi ? 'उदा. श्री विश्वकर्मा मंदिर प्रांगण' : 'e.g. Community Center Hall'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">शहर (City) *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'शहर *' : 'City *'}</label>
                   <input
                     type="text"
                     required
                     value={newEventForm.city}
                     onChange={(e) => setNewEventForm({ ...newEventForm, city: e.target.value })}
-                    placeholder="उदा. जोधपुर"
+                    placeholder={isHi ? 'उदा. जोधपुर' : 'e.g. Jodhpur'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
@@ -852,18 +912,20 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">आयोजक संस्था</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'आयोजक संस्था' : 'Organizer'}</label>
                   <input
                     type="text"
                     value={newEventForm.organizer}
                     onChange={(e) => setNewEventForm({ ...newEventForm, organizer: e.target.value })}
-                    placeholder="उदा. जिला विश्वकर्मा सभा"
+                    placeholder={isHi ? 'उदा. जिला विश्वकर्मा सभा' : 'e.g. Regional Committee'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">संपर्क नंबर / हेल्पलाइन</label>
+                  <label className="text-xs font-bold text-stone-700">
+                    {isHi ? 'संपर्क नंबर / हेल्पलाइन' : 'Contact Helpline'}
+                  </label>
                   <input
                     type="text"
                     value={newEventForm.contactNumber}
@@ -876,30 +938,40 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700">
-                  आयोजन का विस्तृत विवरण (Description)
+                  {isHi ? 'आयोजन का विस्तृत विवरण' : 'Event Description'}
                 </label>
                 <textarea
                   rows={3}
                   value={newEventForm.description}
                   onChange={(e) => setNewEventForm({ ...newEventForm, description: e.target.value })}
-                  placeholder="आयोजन के मुख्य आकर्षण, महाप्रसाद, शोभायात्रा एवं समाज हित के कार्यक्रम..."
+                  placeholder={
+                    isHi
+                      ? 'आयोजन के मुख्य आकर्षण, महाप्रसाद, शोभायात्रा एवं समाज हित के कार्यक्रम...'
+                      : 'Highlights, schedule, cultural programs, and event details...'
+                  }
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                 />
               </div>
 
-              {/* Photo Upload Section with Explicit Size Mentioned in Brackets (As Requested) */}
+              {/* Photo Upload Section with Explicit Size Mentioned in Brackets */}
               <div className="space-y-2 pt-1 border-t border-stone-100">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
                     <ImageIcon className="w-4 h-4 text-amber-800 shrink-0" />
-                    <span>आयोजन बैनर / पोस्टर फोटो (अनुशंसित आकार: 1200 × 630 px, अधिकतम फ़ाइल साइज़: 5 MB) *</span>
+                    <span>
+                      {isHi
+                        ? 'आयोजन बैनर / पोस्टर फोटो (अनुशंसित आकार: 1200 × 630 px, अधिकतम फ़ाइल साइज़: 5 MB) *'
+                        : 'Event Banner / Poster Photo (Recommended: 1200 × 630 px, Max file size: 5 MB) *'}
+                    </span>
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowUrlInput(!showUrlInput)}
                     className="text-[11px] font-bold text-amber-800 hover:text-amber-900 underline cursor-pointer text-left"
                   >
-                    {showUrlInput ? 'फ़ाइल अपलोड पर लौटें' : 'अथवा वेब लिंक (URL) दर्ज करें'}
+                    {showUrlInput
+                      ? (isHi ? 'फ़ाइल अपलोड पर लौटें' : 'Back to File Upload')
+                      : (isHi ? 'अथवा वेब लिंक दर्ज करें' : 'Or Enter Image URL')}
                   </button>
                 </div>
 
@@ -916,7 +988,9 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                       className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 font-mono"
                     />
                     <p className="text-[11px] text-stone-500 font-hindi">
-                      सीधा इमेज वेब लिंक (URL) दर्ज करें (अनुशंसित आकार: 1200 × 630 पिक्सल)
+                      {isHi
+                        ? 'सीधा इमेज वेब लिंक दर्ज करें (अनुशंसित आकार: 1200 × 630 पिक्सल)'
+                        : 'Enter direct image URL (Recommended: 1200 × 630 pixels)'}
                     </p>
                   </div>
                 ) : (
@@ -940,13 +1014,15 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                           />
                           <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-md border border-white/20 flex items-center gap-1">
                             <Check className="w-3 h-3 text-emerald-400" />
-                            <span>फोटो सफलतापूर्वक चयनित</span>
+                            <span>{isHi ? 'फोटो सफलतापूर्वक चयनित' : 'Photo Attached'}</span>
                           </div>
                         </div>
 
                         <div className="flex items-center justify-between pt-2 px-1 text-xs text-stone-300">
                           <div className="truncate max-w-[70%]">
-                            <span className="font-semibold text-white">{imageFileName || 'चयनित बैनर फोटो'}</span>
+                            <span className="font-semibold text-white">
+                              {imageFileName || (isHi ? 'चयनित बैनर फोटो' : 'Attached Banner Photo')}
+                            </span>
                             {imageFileSize && <span className="ml-2 text-stone-400">({imageFileSize})</span>}
                           </div>
                           <button
@@ -955,7 +1031,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                             className="px-3 py-1 bg-red-600/90 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                            <span>फोटो हटाएं</span>
+                            <span>{isHi ? 'फोटो हटाएं' : 'Remove Photo'}</span>
                           </button>
                         </div>
                       </div>
@@ -969,13 +1045,17 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                         </div>
                         <div>
                           <div className="text-xs sm:text-sm font-bold text-stone-900 group-hover:text-amber-900">
-                            कंप्यूटर अथवा मोबाइल से फोटो अपलोड करें
+                            {isHi
+                              ? 'मोबाइल अथवा कंप्यूटर से फोटो अपलोड करें (PNG/JPG)'
+                              : 'Upload Photo from Mobile or PC (PNG/JPG)'}
                           </div>
                           <div className="text-[11px] text-stone-600 font-hindi mt-0.5">
-                            अनुशंसित आकार: <strong>1200 × 630 px</strong> (अधिकतम फ़ाइल साइज़: <strong>5 MB</strong>)
+                            {isHi
+                              ? 'अनुशंसित आकार: 1200 × 630 px (अधिकतम फ़ाइल साइज़: 5 MB)'
+                              : 'Recommended size: 1200 × 630 px (Max file size: 5 MB)'}
                           </div>
                           <div className="text-[10px] text-stone-500 font-mono mt-0.5">
-                            समर्थित प्रारूप: JPG, PNG, WEBP
+                            {isHi ? 'समर्थित प्रारूप: JPG, PNG, WEBP' : 'Supported formats: JPG, PNG, WEBP'}
                           </div>
                         </div>
                         <button
@@ -983,7 +1063,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                           className="px-4 py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs pointer-events-none"
                         >
                           <UploadCloud className="w-3.5 h-3.5" />
-                          <span>फोटो चुनें (Browse Photo)</span>
+                          <span>{isHi ? 'फोटो चुनें' : 'Choose Photo'}</span>
                         </button>
                       </div>
                     )}
@@ -1000,7 +1080,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                   }}
                   className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
-                  रद्द करें
+                  {isHi ? 'रद्द करें' : 'Cancel'}
                 </button>
 
                 <button
@@ -1008,7 +1088,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                   className="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>आयोजन प्रकाशित करें</span>
+                  <span>{isHi ? 'आयोजन प्रकाशित करें' : 'Publish Event'}</span>
                 </button>
               </div>
             </form>

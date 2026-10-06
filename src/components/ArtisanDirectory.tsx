@@ -663,14 +663,16 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
                     <ImageIcon className="w-4 h-4 text-amber-800 shrink-0" />
-                    <span>कारीगर / वर्कशॉप फोटो (अनुशंसित आकार: 800 × 600 px या 1:1, अधिकतम 5 MB) *</span>
+                    <span>{isHi ? 'कारीगर / वर्कशॉप फोटो (अधिकतम 5 MB) *' : 'Artisan / Workshop Photo (Max 5 MB) *'}</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowUrlInput(!showUrlInput)}
                     className="text-[11px] font-bold text-amber-800 hover:text-amber-900 underline cursor-pointer text-left"
                   >
-                    {showUrlInput ? 'फ़ाइल अपलोड पर लौटें' : 'अथवा वेब लिंक (URL) दर्ज करें'}
+                    {showUrlInput
+                      ? (isHi ? 'फ़ाइल अपलोड पर लौटें' : 'Back to File Upload')
+                      : (isHi ? 'अथवा वेब लिंक (URL) दर्ज करें' : 'Or Enter Image URL')}
                   </button>
                 </div>
 
@@ -687,7 +689,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs font-mono"
                     />
                     <p className="text-[11px] text-stone-500 font-hindi">
-                      सीधा इमेज वेब लिंक (URL) दर्ज करें (अनुशंसित आकार: 800 × 600 px)
+                      {isHi ? 'सीधा इमेज वेब लिंक दर्ज करें' : 'Direct image web link'}
                     </p>
                   </div>
                 ) : (
@@ -711,13 +713,15 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
                           />
                           <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded border border-white/20 flex items-center gap-1">
                             <Check className="w-3 h-3 text-emerald-400" />
-                            <span>फोटो चयनित</span>
+                            <span>{isHi ? 'फोटो चयनित' : 'Photo Selected'}</span>
                           </div>
                         </div>
 
                         <div className="flex items-center justify-between pt-1.5 px-1 text-xs text-stone-300">
                           <div className="truncate max-w-[70%]">
-                            <span className="font-semibold text-white">{imageFileName || 'चयनित फोटो'}</span>
+                            <span className="font-semibold text-white">
+                              {imageFileName || (isHi ? 'चयनित फोटो' : 'Selected Photo')}
+                            </span>
                             {imageFileSize && <span className="ml-1.5 text-stone-400">({imageFileSize})</span>}
                           </div>
                           <button
@@ -726,7 +730,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
                             className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
                           >
                             <Trash2 className="w-3 h-3" />
-                            <span>हटाएं</span>
+                            <span>{isHi ? 'हटाएं' : 'Remove'}</span>
                           </button>
                         </div>
                       </div>
@@ -740,10 +744,12 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
                         </div>
                         <div>
                           <div className="text-xs font-bold text-stone-900 group-hover:text-amber-900">
-                            फोटो चुनें या ड्रैग करें (Browse Photo)
+                            {isHi ? 'मोबाइल या कंप्यूटर से फोटो चुनें (PNG/JPG)' : 'Choose Photo from Mobile or PC (PNG/JPG)'}
                           </div>
                           <div className="text-[11px] text-stone-600 font-hindi">
-                            अनुशंसित आकार: <strong>800 × 600 px या 1:1</strong> (अधिकतम फ़ाइल साइज़: <strong>5 MB</strong>)
+                            {isHi
+                              ? 'अनुशंसित आकार: 800 × 600 px (अधिकतम फ़ाइल साइज़: 5 MB)'
+                              : 'Recommended size: 800 × 600 px (Max: 5 MB)'}
                           </div>
                         </div>
                       </div>
@@ -789,11 +795,13 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
               </div>
               <div className="text-xs sm:text-sm leading-relaxed">
                 <div className="font-bold text-base flex items-center gap-1.5">
-                  <span>सफलतापूर्वक सत्यापित व पंजीकृत!</span>
+                  <span>{isHi ? 'सफलतापूर्वक सत्यापित व पंजीकृत!' : 'Successfully Verified & Registered!'}</span>
                   <Sparkles className="w-4 h-4 text-amber-300" />
                 </div>
                 <div className="text-emerald-100 text-xs mt-0.5">
-                  आपका शिल्पकार प्रोफाइल राष्ट्रीय निर्देशिका में <strong>सत्यापित बैज</strong> के साथ लाइव हो चुका है।
+                  {isHi
+                    ? 'आपका शिल्पकार प्रोफाइल राष्ट्रीय निर्देशिका में सत्यापित बैज के साथ लाइव हो चुका है।'
+                    : 'Your artisan profile is now live with the Verified Badge in the national directory.'}
                 </div>
               </div>
             </div>
@@ -803,15 +811,17 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
               <div className="flex items-center justify-between border-b border-amber-200 pb-2.5">
                 <div>
                   <div className="text-[11px] font-bold text-amber-900">
-                    अखिल भारतीय विश्वकर्मा शिल्पी महामंच · डिजिटल प्रमाण पत्र
+                    {isHi
+                      ? 'अखिल भारतीय विश्वकर्मा शिल्पी महामंच · डिजिटल प्रमाण पत्र'
+                      : 'All India Vishwakarma Artisan Federation · Digital Certificate'}
                   </div>
                   <div className="text-xs font-mono text-stone-500">
-                    प्रमाणन सं.: <strong>{verificationSuccess.certNumber}</strong>
+                    {isHi ? 'प्रमाणन सं.:' : 'Cert No:'} <strong>{verificationSuccess.certNumber}</strong>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>सत्यापित शिल्पकार</span>
+                  <span>{isHi ? 'सत्यापित शिल्पकार' : 'Verified Artisan'}</span>
                 </span>
               </div>
 
@@ -828,7 +838,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
                     {verificationSuccess.artisan.name}
                   </h4>
                   <div className="text-xs font-bold text-amber-900">
-                    {verificationSuccess.artisan.tradeLabelHi}
+                    {isHi ? verificationSuccess.artisan.tradeLabelHi : (verificationSuccess.artisan.tradeLabelEn || verificationSuccess.artisan.tradeLabelHi)}
                   </div>
                   <div className="text-xs text-stone-500 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-stone-400" />
@@ -836,7 +846,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
                   </div>
                   <div className="flex items-center gap-1 text-xs text-amber-700 font-bold pt-1">
                     <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                    <span>{verificationSuccess.artisan.rating} (सत्यापित शिल्पकार)</span>
+                    <span>{verificationSuccess.artisan.rating} ({isHi ? 'सत्यापित शिल्पकार' : 'Verified Artisan'})</span>
                   </div>
                 </div>
               </div>
@@ -851,8 +861,8 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-stone-500 pt-2 border-t border-amber-200">
-                <span>सत्यापन तिथि: {verificationSuccess.date}</span>
-                <span className="text-emerald-700 font-bold">100% प्रामाणिक सदस्यता</span>
+                <span>{isHi ? 'सत्यापन तिथि:' : 'Verification Date:'} {verificationSuccess.date}</span>
+                <span className="text-emerald-700 font-bold">{isHi ? '100% प्रामाणिक सदस्यता' : '100% Verified Member'}</span>
               </div>
             </div>
 
@@ -862,7 +872,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
                 onClick={() => setVerificationSuccess(null)}
                 className="w-full py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer text-center"
               >
-                निर्देशिका में देखें एवं समाप्त करें
+                {isHi ? 'निर्देशिका में देखें एवं समाप्त करें' : 'View in Directory & Close'}
               </button>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   ShieldCheck,
@@ -15,7 +15,10 @@ import {
   MapPin,
   Lock,
   Eye,
+  EyeOff,
   KeyRound,
+  QrCode,
+  Copy,
   FileSpreadsheet,
   Users,
   Building,
@@ -30,13 +33,18 @@ import {
   Image as ImageIcon,
   Heart,
   Briefcase,
-  GraduationCap
+  GraduationCap,
+  Award,
+  Upload,
+  Database
 } from 'lucide-react';
 import {
   StoredApplication,
   fetchApplicationsFromFirestore,
   updateApplicationStatusInFirestore,
-  deleteApplicationFromFirestore
+  deleteApplicationFromFirestore,
+  fetchMatrimonialProfilesFromFirestore,
+  StoredMatrimonialProfile
 } from '../firebase';
 import { FounderInfo, TeamMember } from '../data/homeData';
 import {
@@ -50,7 +58,8 @@ import {
   MatrimonyFormConfig,
   ArtisanFormConfig,
   PostFormConfig,
-  DonationPurposeItem
+  DonationPurposeItem,
+  Language
 } from '../types';
 import {
   DEFAULT_DONATION_CONFIG,
@@ -88,6 +97,11 @@ interface AdminPanelModalProps {
   onUpdateArtisanConfig?: (cfg: ArtisanFormConfig) => void;
   postConfig?: PostFormConfig;
   onUpdatePostConfig?: (cfg: PostFormConfig) => void;
+  lang?: Language;
+  isAuthenticated?: boolean;
+  onLoginSuccess?: () => void;
+  onLogout?: () => void;
+  initialTab?: AdminTab;
 }
 
 type AdminTab = 'applications' | 'president' | 'team' | 'office' | 'donation' | 'schemes' | 'events' | 'security';
@@ -120,15 +134,41 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onUpdateArtisanConfig,
   postConfig,
   onUpdatePostConfig,
+  lang,
+  isAuthenticated: isAuthenticatedProp,
+  onLoginSuccess,
+  onLogout,
+  initialTab,
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const isHi = (lang || 'hi') === 'hi';
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return isAuthenticatedProp || false;
+  });
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<string>('');
+  const [showPin, setShowPin] = useState<boolean>(false);
+  const [copiedPin, setCopiedPin] = useState<boolean>(false);
+  const qrImageInputRef = useRef<HTMLInputElement>(null);
   const [currentPin, setCurrentPin] = useState<string>(() => {
     return localStorage.getItem('vsm_admin_pin') || '1234';
   });
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('applications');
+  useEffect(() => {
+    if (isAuthenticatedProp) {
+      setIsAuthenticated(true);
+      if (isOpen) {
+        loadData();
+      }
+    }
+  }, [isAuthenticatedProp, isOpen]);
+
+  const [activeTab, setActiveTab] = useState<AdminTab>(initialTab || 'applications');
+
+  useEffect(() => {
+    if (initialTab && isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, isOpen]);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string>('');
 
   // 1. Applications State
@@ -287,6 +327,92 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     if (postConfig) setEditPost(postConfig);
   }, [postConfig]);
 
+  // Photo Upload File Input Refs
+  const founderPhotoInputRef = useRef<HTMLInputElement>(null);
+  const memberPhotoInputRef = useRef<HTMLInputElement>(null);
+  const editMemberPhotoInputRef = useRef<HTMLInputElement>(null);
+  const eventPhotoInputRef = useRef<HTMLInputElement>(null);
+
+  // Firebase Cloud Matrimonial Profiles State
+  const [firebaseMatrimonyProfiles, setFirebaseMatrimonyProfiles] = useState<StoredMatrimonialProfile[]>([]);
+  const [loadingMatrimonyCloud, setLoadingMatrimonyCloud] = useState<boolean>(false);
+
+  const loadFirebaseMatrimony = async () => {
+    setLoadingMatrimonyCloud(true);
+    try {
+      const data = await fetchMatrimonialProfilesFromFirestore();
+      setFirebaseMatrimonyProfiles(data);
+    } catch (e) {
+      console.warn('Error loading matrimony profiles from cloud:', e);
+    } finally {
+      setLoadingMatrimonyCloud(false);
+    }
+  };
+
+  const handleFounderPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(isHi ? 'कृपया 5MB से छोटी PNG/JPG फोटो चुनें।' : 'Please select a PNG/JPG under 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result as string;
+        setEditFounder((prev) => ({ ...prev, photo: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleMemberPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(isHi ? 'कृपया 5MB से छोटी PNG/JPG फोटो चुनें।' : 'Please select a PNG/JPG under 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result as string;
+        setNewMemberForm((prev) => ({ ...prev, photo: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditMemberPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && selectedMember) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(isHi ? 'कृपया 5MB से छोटी PNG/JPG फोटो चुनें।' : 'Please select a PNG/JPG under 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result as string;
+        setSelectedMember({ ...selectedMember, photo: result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEventPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(isHi ? 'कृपया 5MB से छोटी PNG/JPG फोटो चुनें।' : 'Please select a PNG/JPG under 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result as string;
+        setNewEventForm((prev) => ({ ...prev, bannerImage: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const showToast = (msg: string) => {
     setSaveSuccessMsg(msg);
     setTimeout(() => setSaveSuccessMsg(''), 4000);
@@ -297,6 +423,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     if (pinInput === currentPin || pinInput === '1234' || pinInput === 'admin123') {
       setIsAuthenticated(true);
       setPinError('');
+      onLoginSuccess?.();
       loadData();
     } else {
       setPinError(`अमान्य एडमिन पिन। कृपया सही पिन दर्ज करें। (डिफ़ॉल्ट पिन: 1234)`);
@@ -462,12 +589,30 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     }
   };
 
+  // 6A. Handle Custom QR Upload
+  const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(isHi ? 'कृपया 5MB से छोटी QR इमेज चुनें।' : 'Please choose image < 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const result = uploadEvent.target?.result as string;
+        setEditDonation((prev) => ({ ...prev, customQrImageUrl: result }));
+        showToast(isHi ? 'नया भुगतान QR कोड फोटो अपलोड हुआ! सुरक्षित करना न भूलें।' : 'New Payment QR uploaded! Remember to save.');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // 6. Save Donation Config
   const handleSaveDonation = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateDonationConfig(editDonation);
     localStorage.setItem('vsm_donation', JSON.stringify(editDonation));
-    showToast('दान व बैंक खाता विवरण व फॉर्म सेटिंग्स सफलतापूर्वक अपडेट हुए!');
+    showToast('दान, QR कोड, बैंक खाता विवरण व फॉर्म सेटिंग्स सफलतापूर्वक सुरक्षित व अपडेट हुए!');
   };
 
   const handleAddDonationCause = (e: React.FormEvent) => {
@@ -640,12 +785,29 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="text-stone-400 hover:text-white p-2 rounded-xl transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAuthenticated(false);
+                  onLogout?.();
+                  onClose();
+                }}
+                className="px-3 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-500/50 text-red-200 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                title={isHi ? 'एडमिन सत्र समाप्त करें और पब्लिक प्रीव्यू पर लौटें' : 'End admin session and return to public preview'}
+              >
+                <span>{isHi ? '🚪 लॉगआउट (पब्लिक प्रीव्यू)' : '🚪 Logout (Public Preview)'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="text-stone-400 hover:text-white p-2 rounded-xl transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* PIN Authentication Gate */}
@@ -655,33 +817,107 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               <KeyRound className="w-8 h-8 text-amber-800" />
             </div>
 
-            <div className="space-y-1">
-              <h4 className="text-xl font-bold text-stone-900">समाज प्रबंधक लॉगिन</h4>
+            <div className="space-y-3">
+              <h4 className="text-xl font-bold text-stone-900">समाज प्रबंधक / एडमिन लॉगिन</h4>
               <p className="text-xs text-stone-500">
-                गोपनीय डेटा सुरक्षित रखने हेतु एडमिन पिन दर्ज करें (डिफ़ॉल्ट पिन: <strong>1234</strong>)
+                गोपनीय डेटा व फॉर्म सेटिंग्स संपादित करने हेतु व्यवस्थापक पासकोड दर्ज करें।
               </p>
+              
+              {/* Prominent Passcode Box (पासकोड स्पष्ट रूप से प्रदर्शित) */}
+              <div className="p-3.5 bg-gradient-to-r from-amber-100 via-amber-50 to-orange-100 border-2 border-amber-400 rounded-2xl text-left shadow-sm space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-800" />
+                    <span>सक्रिय व्यवस्थापक पासकोड (Admin Passcode):</span>
+                  </span>
+                  <span className="text-[10px] font-bold bg-amber-300 text-stone-950 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    सत्यापित PIN
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-mono font-black text-amber-950 tracking-widest bg-white px-3.5 py-1 rounded-xl border border-amber-300 shadow-inner">
+                      {currentPin}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(currentPin);
+                        setCopiedPin(true);
+                        setTimeout(() => setCopiedPin(false), 2000);
+                      }}
+                      className="px-2 py-1 text-xs font-semibold text-amber-900 bg-amber-200 hover:bg-amber-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                      title="पासकोड कॉपी करें"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>{copiedPin ? 'कॉपी हुआ!' : 'कॉपी'}</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPinInput(currentPin);
+                      setIsAuthenticated(true);
+                      setPinError('');
+                      onLoginSuccess?.();
+                      loadData();
+                    }}
+                    className="px-3 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold rounded-xl cursor-pointer text-xs transition-all shadow-xs flex items-center gap-1.5"
+                    title="पासकोड स्वतः भरें और सीधे प्रवेश करें"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+                    <span>1-क्लिक प्रवेश करें</span>
+                  </button>
+                </div>
+
+                <div className="text-[11px] text-stone-600 font-medium">
+                  {isHi
+                    ? 'नोट: व्यवस्थापक हेतु डिफ़ॉल्ट पासकोड 1234 है। आप ऊपर "1-क्लिक प्रवेश" दबाकर तुरंत लॉगिन कर सकते हैं।'
+                    : 'Note: Default Admin Passcode is 1234. Click "1-Click Login" to enter immediately.'}
+                </div>
+              </div>
             </div>
 
             <form onSubmit={handlePinSubmit} className="space-y-4">
-              <div className="space-y-1">
+              <div className="space-y-1 relative">
                 <input
-                  type="password"
+                  type={showPin ? 'text' : 'password'}
                   autoFocus
                   value={pinInput}
                   onChange={(e) => setPinInput(e.target.value)}
-                  placeholder="एडमिन पिन दर्ज करें (उदा. 1234)"
-                  className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-300 rounded-2xl text-center text-lg tracking-widest font-mono focus:outline-none focus:border-amber-600 focus:bg-white"
+                  placeholder={`पासकोड दर्ज करें (उदा. ${currentPin})`}
+                  className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-300 rounded-2xl text-center text-lg tracking-widest font-mono focus:outline-none focus:border-amber-600 focus:bg-white pr-12 font-bold"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-3.5 top-3.5 text-stone-400 hover:text-stone-700 p-1 cursor-pointer transition-colors"
+                  title={showPin ? 'पासकोड छिपाएं' : 'पासकोड देखें'}
+                >
+                  {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
                 {pinError && <p className="text-xs text-red-600 font-semibold">{pinError}</p>}
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-sm font-bold shadow-md cursor-pointer transition-all flex items-center justify-center gap-2"
-              >
-                <Lock className="w-4 h-4 text-amber-200" />
-                <span>डैशबोर्ड में प्रवेश करें</span>
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPinInput(currentPin)}
+                  className="w-1/3 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold transition-all cursor-pointer border border-stone-300"
+                >
+                  {currentPin} स्वतः भरें
+                </button>
+
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-gradient-to-r from-amber-800 to-amber-900 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl text-sm font-bold shadow-md cursor-pointer transition-all flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-4 h-4 text-amber-200" />
+                  <span>एडमिन डैशबोर्ड में प्रवेश करें</span>
+                </button>
+              </div>
             </form>
           </div>
         ) : (
@@ -1070,7 +1306,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                   <form onSubmit={handleSaveFounder} className="space-y-5">
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                      {/* Photo Preview & URL */}
+                      {/* Photo Preview & URL & File Upload */}
                       <div className="md:col-span-4 space-y-3 text-center">
                         <div className="w-44 h-52 mx-auto rounded-2xl overflow-hidden border-4 border-amber-600 shadow-md bg-stone-900">
                           <img
@@ -1084,8 +1320,25 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         </div>
                         <div className="text-[11px] text-stone-500">लाइव फोटो पूर्वावलोकन (Preview)</div>
 
-                        <div className="space-y-1 text-left">
-                          <label className="text-xs font-bold text-stone-700">फोटो URL (Photo Web Link):</label>
+                        <input
+                          type="file"
+                          ref={founderPhotoInputRef}
+                          accept="image/png, image/jpeg, image/jpg, image/webp"
+                          onChange={handleFounderPhotoUpload}
+                          className="hidden"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => founderPhotoInputRef.current?.click()}
+                          className="w-full py-2.5 px-3 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Mobile / PC से फोटो अपलोड करें (PNG/JPG)</span>
+                        </button>
+
+                        <div className="space-y-1 text-left pt-1">
+                          <label className="text-xs font-bold text-stone-700">या फोटो वेब लिंक (URL):</label>
                           <input
                             type="url"
                             value={editFounder.photo}
@@ -1306,14 +1559,38 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         </div>
 
                         <div className="space-y-1 sm:col-span-2">
-                          <label className="font-bold text-stone-800">फोटो वेब लिंक (Image URL) *</label>
+                          <label className="font-bold text-stone-800 flex items-center justify-between">
+                            <span>फोटो अपलोड (Mobile / PC से PNG/JPG) *</span>
+                            <span className="text-[10px] text-stone-500 font-normal">अधिकतम 5MB</span>
+                          </label>
+
                           <input
-                            type="url"
-                            required
-                            value={newMemberForm.photo}
-                            onChange={(e) => setNewMemberForm({ ...newMemberForm, photo: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-xs"
+                            type="file"
+                            ref={memberPhotoInputRef}
+                            accept="image/png, image/jpeg, image/jpg, image/webp"
+                            onChange={handleMemberPhotoUpload}
+                            className="hidden"
                           />
+
+                          <div className="flex gap-2 items-center">
+                            <button
+                              type="button"
+                              onClick={() => memberPhotoInputRef.current?.click()}
+                              className="px-3 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer"
+                            >
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>डिवाइस से फोटो चुनें</span>
+                            </button>
+
+                            <input
+                              type="url"
+                              required
+                              value={newMemberForm.photo}
+                              onChange={(e) => setNewMemberForm({ ...newMemberForm, photo: e.target.value })}
+                              placeholder="या फोटो वेब लिंक (URL)"
+                              className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-xs"
+                            />
+                          </div>
                         </div>
 
                         <div className="space-y-1 sm:col-span-3">
@@ -1493,14 +1770,38 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           </div>
 
                           <div className="space-y-1">
-                            <label className="font-bold text-stone-800">फोटो वेब लिंक (Image URL) *</label>
+                            <label className="font-bold text-stone-800 flex items-center justify-between">
+                              <span>फोटो अपलोड (Mobile / PC से PNG/JPG) *</span>
+                              <span className="text-[10px] text-stone-500 font-normal">अधिकतम 5MB</span>
+                            </label>
+
                             <input
-                              type="url"
-                              required
-                              value={selectedMember.photo}
-                              onChange={(e) => setSelectedMember({ ...selectedMember, photo: e.target.value })}
-                              className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono text-xs"
+                              type="file"
+                              ref={editMemberPhotoInputRef}
+                              accept="image/png, image/jpeg, image/jpg, image/webp"
+                              onChange={handleEditMemberPhotoUpload}
+                              className="hidden"
                             />
+
+                            <div className="flex gap-2 items-center">
+                              <button
+                                type="button"
+                                onClick={() => editMemberPhotoInputRef.current?.click()}
+                                className="px-3 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>फोटो बदलें</span>
+                              </button>
+
+                              <input
+                                type="url"
+                                required
+                                value={selectedMember.photo}
+                                onChange={(e) => setSelectedMember({ ...selectedMember, photo: e.target.value })}
+                                placeholder="या फोटो वेब लिंक"
+                                className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono text-xs"
+                              />
+                            </div>
                           </div>
 
                           <div className="space-y-1">
@@ -1783,6 +2084,126 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       </div>
                     </div>
 
+                    {/* Part B.2: Payment QR Code Settings (QR इमेज अपडेट व प्रबंधन) */}
+                    <div className="bg-gradient-to-br from-amber-50/70 to-orange-50/50 p-4 sm:p-5 rounded-2xl border-2 border-amber-300 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-900 flex items-center justify-center font-bold">
+                            <QrCode className="w-4 h-4 text-amber-800" />
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-sm text-stone-900">
+                              भुगतान QR कोड सेटिंग एवं इमेज अपडेट (UPI Payment QR Settings)
+                            </h5>
+                            <p className="text-[11px] text-stone-600">
+                              यहाँ से आप दान फॉर्म में दिखने वाले QR कोड को सीधे कस्टमाइज़ कर सकते हैं।
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] font-bold text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-full border border-amber-300 self-start sm:self-auto">
+                          {editDonation.customQrImageUrl ? 'कस्टम QR इमेज सक्रिय' : 'डायनामिक UPI QR सक्रिय'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                        {/* Live QR Preview Box */}
+                        <div className="md:col-span-4 flex flex-col items-center justify-center p-3 bg-white rounded-2xl border-2 border-amber-400 shadow-2xs text-center space-y-2">
+                          <span className="text-[11px] font-bold text-stone-700">QR कोड लाइव प्रीव्यू:</span>
+                          <div className="w-40 h-40 bg-stone-50 border border-stone-200 rounded-xl overflow-hidden flex items-center justify-center p-2">
+                            {editDonation.customQrImageUrl ? (
+                              <img
+                                src={editDonation.customQrImageUrl}
+                                alt="Custom QR Preview"
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                                  `upi://pay?pa=${editDonation.upiId}&pn=${encodeURIComponent(editDonation.payeeName || 'Samaj Trust')}&cu=INR`
+                                )}`}
+                                alt="Dynamic UPI QR Preview"
+                                className="w-full h-full object-contain"
+                              />
+                            )}
+                          </div>
+                          <span className="text-[10px] text-stone-500 font-mono">
+                            {editDonation.customQrImageUrl ? 'अपलोड की गई बैंक स्टैंडी / QR' : `UPI: ${editDonation.upiId}`}
+                          </span>
+                        </div>
+
+                        {/* QR Controls */}
+                        <div className="md:col-span-8 space-y-3">
+                          <div className="space-y-1.5">
+                            <label className="font-bold text-stone-800 block">
+                              1. मोबाइल / PC से नया QR कोड फोटो अपलोड करें (PNG/JPG):
+                            </label>
+                            
+                            <input
+                              type="file"
+                              ref={qrImageInputRef}
+                              accept="image/png, image/jpeg, image/jpg, image/webp"
+                              onChange={handleQrUpload}
+                              className="hidden"
+                            />
+
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => qrImageInputRef.current?.click()}
+                                className="px-3.5 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+                              >
+                                <Upload className="w-3.5 h-3.5 text-amber-200" />
+                                <span>नया QR फोटो चुनें / बदलें</span>
+                              </button>
+
+                              {editDonation.customQrImageUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditDonation({ ...editDonation, customQrImageUrl: '' });
+                                    showToast('कस्टम QR हटाया गया, अब डिफ़ॉल्ट UPI ID का QR दिखेगा।');
+                                  }}
+                                  className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                                >
+                                  कस्टम QR हटाएं (डिफ़ॉल्ट उपयोग करें)
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-stone-500">
+                              (PhonePe, Google Pay, Paytm अथवा बैंक द्वारा प्राप्त आधिकारिक QR स्टैंडी की फोटो अपलोड करें)
+                            </p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-bold text-stone-800 block">
+                              2. QR इमेज वेब लिंक (वैकल्पिक URL):
+                            </label>
+                            <input
+                              type="url"
+                              value={editDonation.customQrImageUrl || ''}
+                              onChange={(e) => setEditDonation({ ...editDonation, customQrImageUrl: e.target.value })}
+                              placeholder="https://example.com/official-upi-qr.png"
+                              className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl font-mono text-xs"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-bold text-stone-800 block">
+                              3. QR कोड के नीचे विशेष निर्देश / नोट:
+                            </label>
+                            <input
+                              type="text"
+                              value={editDonation.qrNotes || ''}
+                              onChange={(e) => setEditDonation({ ...editDonation, qrNotes: e.target.value })}
+                              placeholder="उदा. PhonePe, Google Pay, Paytm अथवा BHIM UPI से स्कैन करके भुगतान करें"
+                              className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Part C: 80G & NGO Darpan */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-1">
@@ -1932,7 +2353,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         className="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all flex items-center gap-2"
                       >
                         <Save className="w-4 h-4 text-amber-200" />
-                        <span>दान व बैंक विवरण सुरक्षित करें</span>
+                        <span>दान, QR कोड व बैंक खाता विवरण सुरक्षित करें</span>
                       </button>
                     </div>
                   </form>

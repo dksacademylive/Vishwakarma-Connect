@@ -3,6 +3,11 @@ import { MatrimonialProfile, Language, MatrimonyFormConfig } from '../types';
 import { DEFAULT_MATRIMONY_CONFIG } from '../data/formsData';
 import { MATRIMONIAL_PROFILES } from '../data/mockData';
 import {
+  addMatrimonialProfileToFirestore,
+  fetchMatrimonialProfilesFromFirestore,
+  StoredMatrimonialProfile
+} from '../firebase';
+import {
   Heart,
   Search,
   ShieldCheck,
@@ -25,7 +30,8 @@ import {
   Shield,
   Send,
   Check,
-  Settings
+  Settings,
+  Database
 } from 'lucide-react';
 
 interface MatrimonialSectionProps {
@@ -38,6 +44,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
   const isHi = lang === 'hi';
   const activeConfig = matrimonyConfig || DEFAULT_MATRIMONY_CONFIG;
   const [profiles, setProfiles] = useState<MatrimonialProfile[]>(MATRIMONIAL_PROFILES);
+  const [isFirebaseLoading, setIsFirebaseLoading] = useState<boolean>(false);
   const [genderFilter, setGenderFilter] = useState<'all' | 'groom' | 'bride'>('all');
   const [subcasteFilter, setSubcasteFilter] = useState<string>('all');
   const [privacyFilter, setPrivacyFilter] = useState<'all' | 'verified_only' | 'blur_request'>('all');
@@ -53,8 +60,10 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
     senderName: '',
     senderGotra: '',
     senderPhone: '',
-    relation: 'पिता/अभिभावक',
-    message: 'सादर प्रणाम। हम आपके प्रत्याशी के बायोडाटा से प्रभावित हैं एवं पारिवारिक वार्तालाप को आगे बढ़ाना चाहते हैं।',
+    relation: isHi ? 'पिता/अभिभावक' : 'Father/Guardian',
+    message: isHi
+      ? 'सादर प्रणाम। हम आपके प्रत्याशी के बायोडाटा से प्रभावित हैं एवं पारिवारिक वार्तालाप को आगे बढ़ाना चाहते हैं।'
+      : 'Greetings. We are interested in your candidate profile and would like to discuss further.',
   });
   const [requestSuccess, setRequestSuccess] = useState<boolean>(false);
 
@@ -88,6 +97,30 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
   };
 
   const [newProfileForm, setNewProfileForm] = useState(initialFormState);
+
+  // Load Matrimony Profiles from Firebase Firestore on boot
+  useEffect(() => {
+    let isMounted = true;
+    setIsFirebaseLoading(true);
+    fetchMatrimonialProfilesFromFirestore()
+      .then((remoteList) => {
+        if (isMounted && remoteList && remoteList.length > 0) {
+          setProfiles((prev) => {
+            const remoteIds = new Set(remoteList.map((r) => r.id));
+            const uniquePrev = prev.filter((p) => !remoteIds.has(p.id));
+            return [...(remoteList as MatrimonialProfile[]), ...uniquePrev];
+          });
+        }
+      })
+      .catch((err) => console.warn('Firebase matrimony fetch notice:', err))
+      .finally(() => {
+        if (isMounted) setIsFirebaseLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // OTP Verification Modal State
   const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
@@ -301,6 +334,17 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
     setShowOtpModal(false);
     setNewProfileForm(initialFormState);
 
+    // Save automatically to Firebase Firestore in background
+    addMatrimonialProfileToFirestore(newProfile)
+      .then((docId) => {
+        if (docId) {
+          console.log('Successfully saved to Firebase Firestore matrimony:', docId);
+        }
+      })
+      .catch((err) => {
+        console.warn('Firebase matrimony save notice:', err);
+      });
+
     triggerToast(
       isHi ? 'बायोडाटा सफलतापूर्वक सत्यापित एवं प्रकाशित!' : 'Profile Verified & Published!',
       isHi
@@ -369,9 +413,9 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 tracking-wide mb-1">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>विश्वकर्मा वैवाहिक परिणय मंच</span>
+            <span>{isHi ? 'विश्वकर्मा वैवाहिक परिणय मंच' : 'Vishwakarma Matrimonial Portal'}</span>
             <span aria-hidden="true">·</span>
-            <span>100% OTP सत्यापित बायोडाटा एवं त्रिस्तरीय गोपनीयता</span>
+            <span>{isHi ? '100% OTP सत्यापित बायोडाटा एवं त्रिस्तरीय गोपनीयता' : '100% OTP Verified Biodata & 3-Tier Privacy'}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 font-display">
             {isHi ? 'विश्वकर्मा परिणय संबंध मंच' : 'Vishwakarma Matrimonial Portal'}
@@ -389,10 +433,10 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
               type="button"
               onClick={onOpenAdmin}
               className="px-3.5 py-3 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
-              title="एडमिन पोर्टल में विवाह बायोडाटा फॉर्म सेटिंग्स व उपजातियां संपादित करें"
+              title={isHi ? 'एडमिन पोर्टल में विवाह बायोडाटा फॉर्म सेटिंग्स व उपजातियां संपादित करें' : 'Edit matrimonial form settings in admin'}
             >
               <Settings className="w-4 h-4 text-amber-800" />
-              <span>⚙️ एडमिन: फॉर्म विकल्प संपादित करें</span>
+              <span>{isHi ? '⚙️ एडमिन: फॉर्म विकल्प संपादित करें' : '⚙️ Admin: Form Settings'}</span>
             </button>
           )}
 
@@ -419,7 +463,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
           <div className="space-y-1.5 max-w-xl">
             <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
               <Shield className="w-4 h-4 text-amber-400" />
-              <span>विश्वकर्मा परिणय सुरक्षा कवच (Privacy & Dignity Guard)</span>
+              <span>{isHi ? 'विश्वकर्मा परिणय सुरक्षा कवच' : 'Vishwakarma Matrimonial Privacy Guard'}</span>
             </div>
             <h3 className="text-lg sm:text-2xl font-bold font-display text-white">
               {isHi ? 'संबंध वही, जो कुल, मर्यादा और निजता की रक्षा करे' : 'Sacred Union With Absolute Privacy'}
@@ -436,25 +480,31 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
             <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1">
               <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
                 <CheckCircle className="w-4 h-4 text-emerald-400" />
-                <span>100% OTP सत्यापित</span>
+                <span>{isHi ? '100% OTP सत्यापित' : '100% OTP Verified'}</span>
               </div>
-              <p className="text-[11px] text-stone-300 font-hindi">फोन व ईमेल सुरक्षा कोड से जांची गई प्रामाणिक प्रविष्टियां।</p>
+              <p className="text-[11px] text-stone-300 font-hindi">
+                {isHi ? 'फोन व ईमेल सुरक्षा कोड से जांची गई प्रामाणिक प्रविष्टियां।' : 'Authentic entries verified with phone and email codes.'}
+              </p>
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1">
               <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
                 <Lock className="w-4 h-4 text-amber-300" />
-                <span>फोटो व नंबर गोपनीयता</span>
+                <span>{isHi ? 'फोटो व नंबर गोपनीयता' : 'Photo & Contact Privacy'}</span>
               </div>
-              <p className="text-[11px] text-stone-300 font-hindi">धुंधली फोटो (Blur) व अनुरोध पर ही संपर्क नंबर का आदान-प्रदान।</p>
+              <p className="text-[11px] text-stone-300 font-hindi">
+                {isHi ? 'धुंधली फोटो व अनुरोध पर ही संपर्क नंबर का आदान-प्रदान।' : 'Candidate photo blur & guardian approval required.'}
+              </p>
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1">
               <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
                 <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>कुल व गोत्र मर्यादा</span>
+                <span>{isHi ? 'कुल व गोत्र मर्यादा' : 'Gotra Tradition & Compliance'}</span>
               </div>
-              <p className="text-[11px] text-stone-300 font-hindi">सगोत्र विवाह निषेध एवं दोनों पक्षों के परिजनों की सीधी सहमति।</p>
+              <p className="text-[11px] text-stone-300 font-hindi">
+                {isHi ? 'सगोत्र विवाह निषेध एवं दोनों पक्षों के परिजनों की सीधी सहमति।' : 'Strict gotra rules and direct guardian consensus.'}
+              </p>
             </div>
           </div>
         </div>
@@ -630,7 +680,13 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                   {profile.isOtpVerified && (
                     <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1 border border-emerald-200">
                       <CheckCircle className="w-3 h-3 text-emerald-600" />
-                      <span>OTP सत्यापित</span>
+                      <span>{isHi ? 'OTP सत्यापित' : 'OTP Verified'}</span>
+                    </span>
+                  )}
+                  {profile.firebaseSynced && (
+                    <span className="text-[10px] font-bold text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded flex items-center gap-1 border border-amber-300">
+                      <Database className="w-2.5 h-2.5 text-amber-700" />
+                      <span>Firebase</span>
                     </span>
                   )}
                 </div>
@@ -646,12 +702,12 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                         {isContactProtected && (
                           <span className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-normal flex items-center gap-1">
                             <Lock className="w-2.5 h-2.5 text-amber-700" />
-                            <span>सुरक्षित संपर्क</span>
+                            <span>{isHi ? 'सुरक्षित संपर्क' : 'Protected Contact'}</span>
                           </span>
                         )}
                       </h3>
                       <div className="flex items-center gap-1.5 text-xs text-stone-500 mt-0.5">
-                        <span>{profile.age} वर्ष</span>
+                        <span>{profile.age} {isHi ? 'वर्ष' : 'yrs'}</span>
                         <span aria-hidden="true">·</span>
                         <span>{profile.height}</span>
                         <span aria-hidden="true">·</span>
@@ -689,11 +745,11 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                     <Phone className="w-3.5 h-3.5 text-amber-800 shrink-0" />
                     {isContactProtected ? (
                       <span className="text-stone-600 font-hindi">
-                        <strong>अभिभावक:</strong> {profile.contactPerson} · <span className="font-mono text-stone-400">+91 98*** ••••• (गोपनीय)</span>
+                        <strong>{isHi ? 'अभिभावक:' : 'Guardian:'}</strong> {profile.contactPerson} · <span className="font-mono text-stone-400">+91 98*** ••••• ({isHi ? 'गोपनीय' : 'Protected'})</span>
                       </span>
                     ) : isGuardianOnly ? (
                       <span className="text-stone-700 font-hindi">
-                        <strong>केवल अभिभावक:</strong> {profile.contactPerson} ({profile.contactNumber})
+                        <strong>{isHi ? 'केवल अभिभावक:' : 'Guardian only:'}</strong> {profile.contactPerson} ({profile.contactNumber})
                       </span>
                     ) : (
                       <span className="text-stone-800 font-mono font-semibold">
@@ -703,7 +759,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                   </div>
                   {isContactProtected && (
                     <span className="text-[10px] text-amber-800 font-bold bg-amber-100/60 px-1.5 py-0.5 rounded">
-                      अनुरोध पर
+                      {isHi ? 'अनुरोध पर' : 'On Request'}
                     </span>
                   )}
                 </div>
@@ -956,7 +1012,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                         <div className="space-y-1.5 text-xs">
                           <div className="text-emerald-700 font-bold flex items-center gap-1">
                             <Check className="w-3.5 h-3.5" />
-                            <span>फोटो अपलोड पूर्ण!</span>
+                            <span>{isHi ? 'फोटो अपलोड पूर्ण!' : 'Photo Upload Complete!'}</span>
                           </div>
                           <div className="text-[11px] text-stone-500 truncate max-w-[180px]">
                             {newProfileForm.photoFileName || 'profile_photo.jpg'}
@@ -967,7 +1023,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                               onClick={() => photoInputRef.current?.click()}
                               className="text-[11px] font-semibold text-amber-800 hover:underline cursor-pointer"
                             >
-                              बदलें
+                              {isHi ? 'बदलें' : 'Change'}
                             </button>
                             <button
                               type="button"
@@ -975,7 +1031,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                               className="text-[11px] font-semibold text-red-600 hover:underline cursor-pointer flex items-center gap-0.5"
                             >
                               <Trash2 className="w-3 h-3" />
-                              <span>हटाएं</span>
+                              <span>{isHi ? 'हटाएं' : 'Remove'}</span>
                             </button>
                           </div>
                         </div>
@@ -985,10 +1041,10 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                         <button
                           type="button"
                           onClick={() => photoInputRef.current?.click()}
-                          className="px-4 py-2.5 bg-white border border-stone-300 hover:border-amber-700 rounded-xl text-xs font-semibold text-amber-900 flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
+                          className="px-4 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
                         >
-                          <Upload className="w-4 h-4 text-amber-700" />
-                          <span>{isHi ? 'फोटो चुनें / अपलोड करें' : 'Browse Photo'}</span>
+                          <Upload className="w-4 h-4 text-white" />
+                          <span>{isHi ? 'मोबाइल / PC से फोटो अपलोड करें (PNG/JPG)' : 'Upload Photo from Mobile / PC (PNG/JPG)'}</span>
                         </button>
                         <span className="text-[11px] text-stone-500">
                           {isHi
@@ -1010,7 +1066,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                     required
                     value={newProfileForm.fullName}
                     onChange={(e) => setNewProfileForm({ ...newProfileForm, fullName: e.target.value })}
-                    placeholder="उदा. राहुल शर्मा (जांगिड़)"
+                    placeholder={isHi ? 'उदा. राहुल शर्मा (जांगिड़)' : 'e.g. Rahul Sharma'}
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-amber-700"
                   />
                 </div>
@@ -1031,8 +1087,8 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                       }
                       className="w-full px-3 py-2 border border-stone-200 rounded-lg text-xs bg-white font-medium"
                     >
-                      <option value="groom">वर (Groom)</option>
-                      <option value="bride">वधू (Bride)</option>
+                      <option value="groom">{isHi ? 'वर' : 'Groom'}</option>
+                      <option value="bride">{isHi ? 'वधू' : 'Bride'}</option>
                     </select>
                   </div>
 
@@ -1258,13 +1314,13 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                 <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-3">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-950">
                     <Shield className="w-4 h-4 text-emerald-700" />
-                    <span>{isHi ? 'बायोडाटा गोपनीयता एवं सुरक्षा सेटिंग्स (Privacy Features)' : 'Privacy & Security Controls'}</span>
+                    <span>{isHi ? 'बायोडाटा गोपनीयता एवं सुरक्षा सेटिंग्स' : 'Privacy & Security Settings'}</span>
                   </div>
 
                   {/* Photo Privacy Choice */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-stone-800 block">
-                      {isHi ? '1. फोटो गोपनीयता (Photo Privacy):' : '1. Photo Privacy:'}
+                      {isHi ? '1. फोटो गोपनीयता विकल्प:' : '1. Photo Privacy Option:'}
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       <label className={`p-2.5 rounded-lg border cursor-pointer flex items-start gap-2 ${
@@ -1281,8 +1337,10 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                           className="mt-0.5 text-emerald-600"
                         />
                         <div>
-                          <div className="font-bold">सार्वजनिक (सभी को दृश्य)</div>
-                          <div className="text-[11px] text-stone-500 font-normal">पंजीकृत समाज बंधु स्पष्ट फोटो देख सकेंगे।</div>
+                          <div className="font-bold">{isHi ? 'सार्वजनिक' : 'Public (Visible)'}</div>
+                          <div className="text-[11px] text-stone-500 font-normal">
+                            {isHi ? 'पंजीकृत समाज बंधु स्पष्ट फोटो देख सकेंगे।' : 'Registered members can view candidate photo.'}
+                          </div>
                         </div>
                       </label>
 
@@ -1302,9 +1360,11 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                         <div>
                           <div className="font-bold flex items-center gap-1">
                             <Lock className="w-3 h-3 text-amber-700" />
-                            <span>गोपनीय / धुंधला (Blur Photo)</span>
+                            <span>{isHi ? 'गोपनीय एवं धुंधला' : 'Blur / Confidential'}</span>
                           </div>
-                          <div className="text-[11px] text-stone-500 font-normal">केवल अनुरोध स्वीकार करने पर ही फोटो खुलेगी।</div>
+                          <div className="text-[11px] text-stone-500 font-normal">
+                            {isHi ? 'केवल अनुरोध स्वीकार करने पर ही फोटो खुलेगी।' : 'Photo unlocks only after guardian approval.'}
+                          </div>
                         </div>
                       </label>
                     </div>
@@ -1313,7 +1373,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                   {/* Contact Privacy Choice */}
                   <div className="space-y-1.5 pt-1">
                     <label className="text-xs font-bold text-stone-800 block">
-                      {isHi ? '2. संपर्क नंबर गोपनीयता (Phone Privacy):' : '2. Contact Number Privacy:'}
+                      {isHi ? '2. संपर्क नंबर गोपनीयता विकल्प:' : '2. Contact Privacy Option:'}
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       <label className={`p-2.5 rounded-lg border cursor-pointer flex items-start gap-2 ${
@@ -1332,9 +1392,11 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                         <div>
                           <div className="font-bold flex items-center gap-1">
                             <Lock className="w-3 h-3 text-emerald-700" />
-                            <span>अनुरोध पर (Contact on Request)</span>
+                            <span>{isHi ? 'अनुरोध पर' : 'On Request'}</span>
                           </div>
-                          <div className="text-[11px] text-stone-500 font-normal">अभिभावक द्वारा सहमति देने पर ही नंबर दिखेगा।</div>
+                          <div className="text-[11px] text-stone-500 font-normal">
+                            {isHi ? 'अभिभावक द्वारा सहमति देने पर ही नंबर दिखेगा।' : 'Number visible only after guardian consent.'}
+                          </div>
                         </div>
                       </label>
 
@@ -1352,8 +1414,8 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                           className="mt-0.5 text-emerald-600"
                         />
                         <div>
-                          <div className="font-bold">केवल अभिभावक संपर्क (Guardian Only)</div>
-                          <div className="text-[11px] text-stone-500 font-normal">प्रत्याशी का व्यक्तिगत नंबर गुप्त रहेगा।</div>
+                          <div className="font-bold">{isHi ? 'केवल अभिभावक संपर्क' : 'Guardian Contact Only'}</div>
+                          <div className="text-[11px] text-stone-500 font-normal">{isHi ? 'प्रत्याशी का व्यक्तिगत नंबर गुप्त रहेगा।' : 'Candidate personal number kept hidden.'}</div>
                         </div>
                       </label>
                     </div>
@@ -1371,7 +1433,9 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                       className="mt-0.5 text-amber-800 rounded"
                     />
                     <span>
-                      मैं पुष्टि करता/करती हूँ कि दी गई जानकारी सत्य है एवं हम सगोत्र विवाह निषेध व कुल मर्यादा का पालन करते हैं।
+                      {isHi
+                        ? 'मैं पुष्टि करता/करती हूँ कि दी गई जानकारी सत्य है एवं हम सगोत्र विवाह निषेध व कुल मर्यादा का पालन करते हैं।'
+                        : 'I hereby confirm that all information provided is accurate and adheres to traditional gotra and matrimonial guidelines.'}
                     </span>
                   </label>
                 </div>

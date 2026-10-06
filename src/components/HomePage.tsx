@@ -58,21 +58,22 @@ export const HomePage: React.FC<HomePageProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
         {/* ============================================================ */}
         {/* 2. REPLACED SPOTLIGHT SECTION (Hero के ठीक नीचे) */}
-        {/* आगामी समाज आयोजन | सप्ताह का श्रेष्ठ शिल्पी | विश्वकर्मा बंधु सहायता प्रकोष्ठ */}
         {/* ============================================================ */}
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-stone-200 pb-4">
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5 mb-1">
                 <Sparkles className="w-4 h-4 text-amber-600" />
-                <span>राष्ट्रीय समाज मंच · Spotlight Showcase</span>
+                <span>{isHi ? 'राष्ट्रीय समाज मंच · विशेष झलक' : 'National Community Platform · Spotlight'}</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold font-display text-stone-900">
-                समाज आयोजन, शिल्पी गौरव एवं सहायता प्रकोष्ठ
+                {isHi ? 'समाज आयोजन, शिल्पी गौरव एवं सहायता प्रकोष्ठ' : 'Community Events, Artisan Spotlight & Relief Fund'}
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-stone-500 font-hindi">
-              सक्रिय सामाजिक सहभागिता, शिल्पकार प्रोत्साहन व परोपकार का त्रिवेणी संगम
+              {isHi
+                ? 'सक्रिय सामाजिक सहभागिता, शिल्पकार प्रोत्साहन व परोपकार का त्रिवेणी संगम'
+                : 'Harmonious blend of community engagement, artisan appreciation, and charitable service'}
             </p>
           </div>
 
@@ -89,13 +90,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </div>
                     <div>
                       <h3 className="font-bold text-stone-900 text-base font-display">
-                        आगामी समाज आयोजन
+                        {isHi ? 'आगामी समाज आयोजन' : 'Upcoming Events'}
                       </h3>
-                      <div className="text-[10px] text-stone-500">Upcoming Events</div>
+                      <div className="text-[10px] text-stone-500">{isHi ? 'महोत्सव व सम्मेलन' : 'Conferences & Festivals'}</div>
                     </div>
                   </div>
                   <span className="text-[10px] font-bold text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300">
-                    महोत्सव 2026
+                    {isHi ? 'महोत्सव 2026' : 'Festival 2026'}
                   </span>
                 </div>
 
@@ -125,11 +126,11 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                       <div className="flex items-center justify-between pt-1 border-t border-stone-100">
                         <span className="text-[10px] text-emerald-800 font-bold">
-                          {event.attendeesCount} बंधु अपेक्षित
+                          {event.attendeesCount} {isHi ? 'बंधु अपेक्षित' : 'Expected'}
                         </span>
                         <span className="text-[10px] text-amber-800 font-bold flex items-center gap-0.5 group-hover:underline">
                           <Ticket className="w-3 h-3 text-amber-700" />
-                          <span>विवरण व ई-पास</span>
+                          <span>{isHi ? 'विवरण व ई-पास' : 'Details & Pass'}</span>
                           <ChevronRight className="w-3 h-3" />
                         </span>
                       </div>
@@ -143,7 +144,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   onClick={() => onNavigateTab('events')}
                   className="w-full py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <span>सभी समाज आयोजन व तिथियां देखें</span>
+                  <span>{isHi ? 'सभी समाज आयोजन व तिथियां देखें' : 'View All Upcoming Events'}</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -161,13 +162,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </div>
                     <div>
                       <h3 className="font-bold text-stone-900 text-base font-display">
-                        सप्ताह का श्रेष्ठ शिल्पी
+                        {isHi ? 'सप्ताह का श्रेष्ठ शिल्पी' : 'Artisan of the Week'}
                       </h3>
-                      <div className="text-[10px] text-stone-500">Artisan of the Week</div>
+                      <div className="text-[10px] text-stone-500">{isHi ? 'शिल्पकार सम्मान' : 'Artisan Honor'}</div>
                     </div>
                   </div>
                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    ★ 5.0 प्रमाणित
+                    ★ 5.0 {isHi ? 'प्रमाणित' : 'Verified'}
                   </span>
                 </div>
 
@@ -182,7 +183,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                           className="w-20 h-22 rounded-2xl object-cover border-2 border-amber-600 shadow-xs"
                         />
                         <div className="absolute -bottom-1 -right-1 bg-amber-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                          28 वर्ष
+                          {featuredArtisan.experienceYears} {isHi ? 'वर्ष' : 'Yrs'}
                         </div>
                       </div>
                       <div className="space-y-0.5 min-w-0">
@@ -204,22 +205,22 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200 text-xs text-stone-700 font-hindi space-y-1">
                       <div className="font-bold text-amber-950 flex items-center gap-1">
                         <Sparkles className="w-3 h-3 text-amber-700" />
-                        <span>मुख्य कला व विशेषज्ञता:</span>
+                        <span>{isHi ? 'मुख्य कला व विशेषज्ञता:' : 'Key Specialization:'}</span>
                       </div>
                       <p className="text-[11px] text-stone-600 leading-relaxed">
-                        {featuredArtisan.specialization} (राम मंदिर मॉडल एवं सागवान नक्काशीदार भव्य द्वार)।
+                        {featuredArtisan.specialization}
                       </p>
                     </div>
 
                     <div className="flex gap-2">
                       <a
-                        href={`https://wa.me/919829012345?text=${encodeURIComponent('नमस्ते रमेश जी, मैंने विश्वकर्मा समाज पोर्टल के होम पेज पर आपका श्रेष्ठ शिल्पी कार्य देखा।')}`}
+                        href={`https://wa.me/919829012345?text=${encodeURIComponent(isHi ? 'नमस्ते, मैंने विश्वकर्मा समाज पोर्टल पर आपका श्रेष्ठ शिल्पी कार्य देखा।' : 'Hello, I saw your craftsmanship on Vishwakarma Samaj Portal.')}`}
                         target="_blank"
                         rel="noreferrer"
                         className="flex-1 py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
                       >
                         <PhoneCall className="w-3.5 h-3.5" />
-                        <span>व्हाट्सएप संपर्क</span>
+                        <span>{isHi ? 'व्हाट्सएप संपर्क' : 'WhatsApp Contact'}</span>
                       </a>
                     </div>
                   </div>
@@ -231,7 +232,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   onClick={() => onNavigateTab('directory')}
                   className="w-full py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <span>संपूर्ण कारीगर निर्देशिका खोलें</span>
+                  <span>{isHi ? 'संपूर्ण कारीगर निर्देशिका खोलें' : 'Open Full Artisan Directory'}</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -251,37 +252,39 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </div>
                     <div>
                       <h3 className="font-bold text-white text-base font-display">
-                        विश्वकर्मा बंधु सहायता प्रकोष्ठ
+                        {isHi ? 'विश्वकर्मा बंधु सहायता प्रकोष्ठ' : 'Community Relief Fund'}
                       </h3>
-                      <div className="text-[10px] text-amber-200/80">Welfare & Relief Fund</div>
+                      <div className="text-[10px] text-amber-200/80">{isHi ? 'जनकल्याण एवं सेवा न्यास' : 'Welfare & Service Trust'}</div>
                     </div>
                   </div>
                   <span className="text-[10px] font-bold text-amber-300 bg-amber-900/80 px-2 py-0.5 rounded-full border border-amber-500/60">
-                    80G आयकर छूट
+                    {isHi ? '80G आयकर छूट' : '80G Tax Exemption'}
                   </span>
                 </div>
 
                 <p className="text-xs text-stone-300 font-hindi leading-relaxed">
-                  आपातकालीन चिकित्सा, रक्तदान, मेधावी छात्रवृत्ति एवं असहाय शिल्पियों के कल्याण हेतु समर्पित न्यास।
+                  {isHi
+                    ? 'आपातकालीन चिकित्सा, रक्तदान, मेधावी छात्रवृत्ति एवं असहाय शिल्पियों के कल्याण हेतु समर्पित न्यास।'
+                    : 'Dedicated trust for medical relief, emergency blood network, student scholarships, and artisan welfare.'}
                 </p>
 
                 <div className="space-y-2 text-xs text-stone-200 font-hindi">
                   <div className="flex items-center gap-2 bg-white/5 p-2 rounded-lg border border-white/10">
                     <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>मेधावी बालक-बालिका उच्च शिक्षा छात्रवृत्ति</span>
+                    <span>{isHi ? 'मेधावी बालक-बालिका उच्च शिक्षा छात्रवृत्ति' : 'Higher Education Merit Scholarships'}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-white/5 p-2 rounded-lg border border-white/10">
                     <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>आपातकालीन चिकित्सा व 24x7 रक्तदान कोष</span>
+                    <span>{isHi ? 'आपातकालीन चिकित्सा व 24x7 रक्तदान कोष' : 'Emergency Medical Aid & 24x7 Blood Network'}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-white/5 p-2 rounded-lg border border-white/10">
                     <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>वृद्ध व दिव्यांग शिल्पी औजार व पेंशन सहयोग</span>
+                    <span>{isHi ? 'वृद्ध व दिव्यांग शिल्पी औजार व पेंशन सहयोग' : 'Pension & Tool Grants for Senior Artisans'}</span>
                   </div>
                 </div>
 
                 <div className="p-2.5 bg-black/40 rounded-xl border border-amber-700/50 flex items-center justify-between">
-                  <span className="text-[11px] text-amber-300 font-hindi">हेल्पलाइन:</span>
+                  <span className="text-[11px] text-amber-300 font-hindi">{isHi ? 'हेल्पलाइन:' : 'Helpline:'}</span>
                   <span className="text-xs font-mono font-bold text-white">+91 1800 233 4599</span>
                 </div>
               </div>
@@ -293,7 +296,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   className="w-full py-3 bg-gradient-to-r from-red-600 via-amber-600 to-amber-700 hover:from-red-500 hover:to-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-all transform hover:scale-[1.02]"
                 >
                   <Heart className="w-4 h-4 text-white fill-white" />
-                  <span>सहयोग / दान करें (Donate Now)</span>
+                  <span>{isHi ? 'सहयोग / दान करें' : 'Donate to Relief Fund'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

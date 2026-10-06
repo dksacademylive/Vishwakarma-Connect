@@ -36,12 +36,12 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ setActiveTab, lang }) =>
             <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-amber-300 tracking-wide">
               <span className="flex items-center gap-1.5 bg-amber-950/80 border border-amber-500/50 px-2.5 py-0.5 rounded-full shadow-2xs">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>ॐ श्री विश्वकर्मणे नमः</span>
+                <span>{isHi ? 'ॐ श्री विश्वकर्मणे नमः' : 'Lord Shri Vishwakarma'}</span>
               </span>
               <span aria-hidden="true" className="text-amber-500">·</span>
-              <span className="hidden sm:inline">शिल्पं सर्वकर्मसु कुशलम्</span>
+              <span className="hidden sm:inline">{isHi ? 'शिल्पं सर्वकर्मसु कुशलम्' : 'Mastery in All Crafts'}</span>
               <span aria-hidden="true" className="text-amber-500 hidden sm:inline">·</span>
-              <span className="text-amber-200">अखिल भारतीय महामंच</span>
+              <span className="text-amber-200">{isHi ? 'अखिल भारतीय महामंच' : 'Apex National Community Platform'}</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-white font-display text-balance leading-tight drop-shadow-sm">
@@ -155,17 +155,19 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ setActiveTab, lang }) =>
                   {/* Top Floating Badge */}
                   <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-xs text-amber-300 text-[11px] font-bold px-3 py-1 rounded-full border border-amber-400/60 shadow-md flex items-center gap-1.5 font-hindi">
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>सृष्टि के आदि शिल्पी</span>
+                    <span>{isHi ? 'सृष्टि के आदि शिल्पी' : 'Primal Architect'}</span>
                   </div>
                 </div>
 
                 {/* Bottom Inscription Ribbon */}
                 <div className="pt-3 pb-1 text-center font-hindi space-y-0.5">
                   <div className="text-base sm:text-lg font-bold font-display text-amber-300 drop-shadow-sm flex items-center justify-center gap-2">
-                    <span>ॐ श्री विश्वकर्मणे नमः</span>
+                    <span>{isHi ? 'ॐ श्री विश्वकर्मणे नमः' : 'Lord Shri Vishwakarma'}</span>
                   </div>
                   <div className="text-xs text-amber-100/90 font-medium">
-                    ब्रह्मांड के प्रथम वास्तुकार, शिल्प एवं तकनीकी प्रणेता भगवान विश्वकर्मा
+                    {isHi
+                      ? 'ब्रह्मांड के प्रथम वास्तुकार, शिल्प एवं तकनीकी प्रणेता भगवान विश्वकर्मा'
+                      : 'Divine Architect of the Universe, Patron Deity of Arts, Engineering & Craftsmanship'}
                   </div>
                 </div>
               </div>

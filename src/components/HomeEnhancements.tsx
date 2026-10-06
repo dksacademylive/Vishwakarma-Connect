@@ -156,11 +156,11 @@ export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
           <div className="lg:col-span-8 space-y-4">
             <div className="flex items-center gap-2 text-xs font-bold text-amber-800 uppercase tracking-wider">
               <Quote className="w-4 h-4 text-amber-700" />
-              <span>संस्थापक संरक्षक का प्रेरणादायी संदेश</span>
+              <span>{isHi ? 'संस्थापक संरक्षक का प्रेरणादायी संदेश' : 'Inspiring Message from Founder Patron'}</span>
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-bold font-display text-stone-900 leading-tight">
-              "ज्ञान, शिल्प और स्वाभिमान ही विश्वकर्मा समाज की शाश्वत पहचान है"
+              "{isHi ? 'ज्ञान, शिल्प और स्वाभिमान ही विश्वकर्मा समाज की शाश्वत पहचान है' : 'Knowledge, Craftsmanship and Dignity are the Eternal Identity of Vishwakarma Community'}"
             </h2>
 
             <div className="text-xs sm:text-sm text-stone-700 font-hindi leading-relaxed space-y-3">
@@ -187,13 +187,15 @@ export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5 mb-1">
               <Users className="w-4 h-4 text-amber-700" />
-              <span>संगठन व नेतृत्व · Leadership Council</span>
+              <span>{isHi ? 'संगठन व नेतृत्व · राष्ट्रीय कार्यकारिणी' : 'Organization & Leadership Council'}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold font-display text-stone-900">
-              केंद्रीय कार्यकारिणी एवं प्रमुख पदाधिकारी
+              {isHi ? 'केंद्रीय कार्यकारिणी एवं प्रमुख पदाधिकारी' : 'Central Executive Committee & National Officers'}
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 font-hindi mt-1">
-              अखिल भारतीय विश्वकर्मा समाज महासंघ के समर्पित राष्ट्रीय मार्गदर्शक व पदाधिकारी।
+              {isHi
+                ? 'अखिल भारतीय विश्वकर्मा समाज महासंघ के समर्पित राष्ट्रीय मार्गदर्शक व पदाधिकारी।'
+                : 'Dedicated national leaders and office bearers of All India Vishwakarma Samaj Mahasangh.'}
             </p>
           </div>
         </div>
@@ -215,7 +217,7 @@ export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                    {tm.postHi}
+                    {isHi ? tm.postHi : (tm.postEn || tm.postHi)}
                   </span>
                   <h3 className="font-bold text-base text-stone-900 font-display">
                     {tm.name}

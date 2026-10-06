@@ -334,14 +334,21 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
         <label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
           <ImageIcon className="w-4 h-4 text-amber-800 shrink-0" />
-          <span>{labelTitle} (अनुशंसित आकार: 400 × 500 px या 1:1, अधिकतम 5 MB) *</span>
+          <span>
+            {labelTitle}{' '}
+            {isHi
+              ? '(अनुशंसित आकार: 400 × 500 px या 1:1, अधिकतम 5 MB) *'
+              : '(Recommended: 400 × 500 px or 1:1, Max 5 MB) *'}
+          </span>
         </label>
         <button
           type="button"
           onClick={() => setShowPhotoUrlInput(!showPhotoUrlInput)}
           className="text-[11px] font-bold text-amber-800 hover:text-amber-900 underline cursor-pointer text-left"
         >
-          {showPhotoUrlInput ? 'फ़ाइल अपलोड पर लौटें' : 'अथवा वेब लिंक (URL) दर्ज करें'}
+          {showPhotoUrlInput
+            ? (isHi ? 'फ़ाइल अपलोड पर लौटें' : 'Back to File Upload')
+            : (isHi ? 'अथवा वेब लिंक दर्ज करें' : 'Or Enter Image URL')}
         </button>
       </div>
 
@@ -354,7 +361,9 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
             className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 font-mono"
           />
           <p className="text-[11px] text-stone-500 font-hindi">
-            सीधा इमेज लिंक दर्ज करें (अनुशंसित पासपोर्ट आकार: 400 × 500 पिक्सल)
+            {isHi
+              ? 'सीधा इमेज लिंक दर्ज करें (अनुशंसित पासपोर्ट आकार: 400 × 500 पिक्सल)'
+              : 'Enter direct image URL (Recommended: 400 × 500 pixels)'}
           </p>
         </div>
       ) : (
@@ -378,13 +387,15 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                 />
                 <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded border border-white/20 flex items-center gap-1">
                   <Check className="w-3 h-3 text-emerald-400" />
-                  <span>फोटो चयनित</span>
+                  <span>{isHi ? 'फोटो चयनित' : 'Photo Attached'}</span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-2 px-1 text-xs text-stone-300">
                 <div className="truncate max-w-[70%]">
-                  <span className="font-semibold text-white">{photoFileName || 'पासपोर्ट फोटो'}</span>
+                  <span className="font-semibold text-white">
+                    {photoFileName || (isHi ? 'पासपोर्ट फोटो' : 'Passport Photo')}
+                  </span>
                   {photoFileSize && <span className="ml-1.5 text-stone-400">({photoFileSize})</span>}
                 </div>
                 <button
@@ -393,7 +404,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                   className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
                 >
                   <Trash2 className="w-3 h-3" />
-                  <span>फोटो हटाएं</span>
+                  <span>{isHi ? 'फोटो हटाएं' : 'Remove'}</span>
                 </button>
               </div>
             </div>
@@ -407,13 +418,17 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
               </div>
               <div>
                 <div className="text-xs sm:text-sm font-bold text-stone-900 group-hover:text-amber-900">
-                  कंप्यूटर अथवा मोबाइल से फोटो अपलोड करें
+                  {isHi
+                    ? 'कंप्यूटर अथवा मोबाइल से फोटो अपलोड करें (PNG/JPG)'
+                    : 'Upload Photo from Mobile or PC (PNG/JPG)'}
                 </div>
                 <div className="text-[11px] text-stone-600 font-hindi mt-0.5">
-                  अनुशंसित आकार: <strong>400 × 500 px या 1:1</strong> (अधिकतम फ़ाइल साइज़: <strong>5 MB</strong>)
+                  {isHi
+                    ? 'अनुशंसित आकार: 400 × 500 px या 1:1 (अधिकतम फ़ाइल साइज़: 5 MB)'
+                    : 'Recommended size: 400 × 500 px or 1:1 (Max file size: 5 MB)'}
                 </div>
                 <div className="text-[10px] text-stone-500 font-mono mt-0.5">
-                  स्वीकृत प्रारूप: JPG, PNG, WEBP
+                  {isHi ? 'स्वीकृत प्रारूप: JPG, PNG, WEBP' : 'Accepted formats: JPG, PNG, WEBP'}
                 </div>
               </div>
               <button
@@ -421,7 +436,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                 className="px-4 py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs pointer-events-none"
               >
                 <UploadCloud className="w-3.5 h-3.5" />
-                <span>फोटो चुनें (Browse Photo)</span>
+                <span>{isHi ? 'फोटो चुनें' : 'Choose Photo'}</span>
               </button>
             </div>
           )}
@@ -436,9 +451,9 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-6">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 tracking-wide mb-1">
-            <span>युवा सशक्तिकरण एवं रोजगार मंच</span>
+            <span>{isHi ? 'युवा सशक्तिकरण एवं रोजगार मंच' : 'Youth Empowerment & Career Platform'}</span>
             <span aria-hidden="true">·</span>
-            <span>शिक्षा व कौशल विकास</span>
+            <span>{isHi ? 'शिक्षा व कौशल विकास' : 'Education & Skill Development'}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 font-display">
             {isHi ? 'विश्वकर्मा युवा, शिक्षा एवं रोजगार केंद्र' : 'Youth, Education & Career Portal'}
@@ -450,13 +465,15 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={onOpenAdmin}
-          className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-amber-300 border border-amber-500/50 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer shrink-0 self-start sm:self-auto transition-all"
-        >
-          <ShieldCheck className="w-4 h-4 text-amber-400" />
-          <span>समाज प्रबंधक (Admin Portal)</span>
-        </button>
+        {onOpenAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-amber-300 border border-amber-500/50 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer shrink-0 self-start sm:self-auto transition-all"
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
+            <span>{isHi ? '⚙️ एडमिन: युवा व शिक्षा सेटिंग्स' : '⚙️ Admin: Youth & Jobs Settings'}</span>
+          </button>
+        )}
       </div>
 
       {/* Segmented Controls for Sub-views */}
@@ -547,7 +564,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                     {isApplied ? (
                       <div className="w-full py-2.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5 shadow-2xs">
                         <CheckCircle className="w-4 h-4 text-emerald-700" />
-                        <span>✓ आवेदन सफलतापूर्वक प्रेषित</span>
+                        <span>{isHi ? '✓ आवेदन सफलतापूर्वक प्रेषित' : '✓ Application Submitted'}</span>
                       </div>
                     ) : (
                       <button
@@ -558,7 +575,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                         className="w-full py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
                       >
                         <Briefcase className="w-4 h-4 text-amber-200" />
-                        <span>{isHi ? 'सीधा आवेदन करें (Apply With Photo)' : 'Apply Now'}</span>
+                        <span>{isHi ? 'सीधा आवेदन करें' : 'Apply Now'}</span>
                       </button>
                     )}
                   </div>
@@ -584,7 +601,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 pb-3">
                   <div className="space-y-1">
                     <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
-                      वार्षिक समाज छात्रवृत्ति योजना
+                      {isHi ? 'वार्षिक समाज छात्रवृत्ति योजना' : 'Annual Samaj Scholarship Scheme'}
                     </span>
                     <h3 className="font-bold text-stone-900 text-xl font-display">
                       {sch.title}
@@ -613,7 +630,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                   {isApplied ? (
                     <div className="py-2.5 px-6 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1.5">
                       <CheckCircle className="w-4 h-4 text-emerald-700" />
-                      <span>✓ छात्रवृत्ति आवेदन पंजीकृत</span>
+                      <span>{isHi ? '✓ छात्रवृत्ति आवेदन पंजीकृत' : '✓ Scholarship Applied'}</span>
                     </div>
                   ) : (
                     <button
@@ -648,7 +665,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                    <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
                       {ws.category}
                     </span>
                     <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
@@ -671,10 +688,10 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                     </div>
                     <div className="text-stone-600 flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 text-stone-400" />
-                      <span>प्रशिक्षक: <strong>{ws.instructor}</strong></span>
+                      <span>{isHi ? 'प्रशिक्षक:' : 'Instructor:'} <strong>{ws.instructor}</strong></span>
                     </div>
                     <div className="text-stone-500">
-                      माध्यम: <span className="text-stone-800 font-medium">{ws.mode}</span>
+                      {isHi ? 'माध्यम:' : 'Mode:'} <span className="text-stone-800 font-medium">{ws.mode}</span>
                     </div>
                   </div>
                 </div>
@@ -683,7 +700,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                   {isApplied ? (
                     <div className="w-full py-2.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5">
                       <CheckCircle className="w-4 h-4 text-emerald-700" />
-                      <span>✓ सीट आरक्षित</span>
+                      <span>{isHi ? '✓ सीट आरक्षित' : '✓ Seat Reserved'}</span>
                     </div>
                   ) : (
                     <button
@@ -694,7 +711,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                       className="w-full py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
                     >
                       <Compass className="w-4 h-4 text-amber-200" />
-                      <span>{isHi ? 'निःशुल्क सीट आरक्षित करें (Register Seat)' : 'Register Free Seat'}</span>
+                      <span>{isHi ? 'निःशुल्क सीट आरक्षित करें' : 'Register Free Seat'}</span>
                     </button>
                   )}
                 </div>
@@ -713,7 +730,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
             <div className="flex items-start justify-between border-b border-stone-100 pb-3">
               <div>
                 <span className="text-[11px] font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">
-                  सीधा रोजगार आवेदन प्रपत्र
+                  {isHi ? 'सीधा रोजगार आवेदन प्रपत्र' : 'Direct Job Application'}
                 </span>
                 <h3 className="text-xl font-bold font-display text-stone-900 mt-1">
                   {selectedJob.title}
@@ -735,41 +752,41 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
             <form onSubmit={handleJobSubmit} className="space-y-4">
               {/* Photo Upload Section */}
-              {renderPhotoUploadField('उम्मीदवार पासपोर्ट फोटो')}
+              {renderPhotoUploadField(isHi ? 'उम्मीदवार पासपोर्ट फोटो' : 'Applicant Passport Photo')}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">पूरा नाम (Full Name) *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'पूरा नाम *' : 'Full Name *'}</label>
                   <input
                     type="text"
                     required
                     value={jobForm.fullName}
                     onChange={(e) => setJobForm({ ...jobForm, fullName: e.target.value })}
-                    placeholder="उदा. राहुल जांगिड़"
+                    placeholder={isHi ? 'उदा. राहुल जांगिड़' : 'e.g. Rahul Jangid'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">उपजाति / शाखा *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'उपजाति / शाखा *' : 'Subcaste / Branch *'}</label>
                   <select
                     value={jobForm.subcaste}
                     onChange={(e) => setJobForm({ ...jobForm, subcaste: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   >
-                    <option value="जांगिड़ (सुथार)">जांगिड़ (सुथार)</option>
-                    <option value="पंचाल (लुहार)">पंचाल (लुहार)</option>
-                    <option value="सोनी (स्वर्णकार)">सोनी (स्वर्णकार)</option>
-                    <option value="शिल्पकार (मूर्तिकार)">शिल्पकार (मूर्तिकार)</option>
-                    <option value="कंसारा / कास्यकार">कंसारा / कास्यकार</option>
-                    <option value="विश्वकर्मा अन्य">विश्वकर्मा अन्य</option>
+                    <option value="जांगिड़ (सुथार)">{isHi ? 'जांगिड़ (सुथार)' : 'Jangid (Suthar)'}</option>
+                    <option value="पंचाल (लुहार)">{isHi ? 'पंचाल (लुहार)' : 'Panchal (Luhar)'}</option>
+                    <option value="सोनी (स्वर्णकार)">{isHi ? 'सोनी (स्वर्णकार)' : 'Soni (Swarnakar)'}</option>
+                    <option value="शिल्पकार (मूर्तिकार)">{isHi ? 'शिल्पकार (मूर्तिकार)' : 'Shilpkar (Sculptor)'}</option>
+                    <option value="कंसारा / कास्यकार">{isHi ? 'कंसारा / कास्यकार' : 'Kansara (Metal Crafts)'}</option>
+                    <option value="विश्वकर्मा अन्य">{isHi ? 'विश्वकर्मा अन्य' : 'Other Vishwakarma'}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">मोबाइल / व्हाट्सएप *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'मोबाइल / व्हाट्सएप *' : 'Mobile / WhatsApp *'}</label>
                   <input
                     type="tel"
                     required
@@ -781,13 +798,13 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">ईमेल पता *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'ईमेल पता *' : 'Email Address *'}</label>
                   <input
                     type="email"
                     required
                     value={jobForm.email}
                     onChange={(e) => setJobForm({ ...jobForm, email: e.target.value })}
-                    placeholder="name@gmail.com"
+                    placeholder="name@example.com"
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
@@ -795,25 +812,25 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">वर्तमान शहर *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'वर्तमान शहर *' : 'Current City *'}</label>
                   <input
                     type="text"
                     required
                     value={jobForm.city}
                     onChange={(e) => setJobForm({ ...jobForm, city: e.target.value })}
-                    placeholder="उदा. जयपुर"
+                    placeholder={isHi ? 'उदा. जयपुर' : 'e.g. Jaipur'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">राज्य *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'राज्य *' : 'State *'}</label>
                   <input
                     type="text"
                     required
                     value={jobForm.state}
                     onChange={(e) => setJobForm({ ...jobForm, state: e.target.value })}
-                    placeholder="उदा. राजस्थान"
+                    placeholder={isHi ? 'उदा. राजस्थान' : 'e.g. Rajasthan'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
@@ -821,25 +838,25 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">उच्चतम शैक्षणिक योग्यता *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'उच्चतम शैक्षणिक योग्यता *' : 'Highest Qualification *'}</label>
                   <input
                     type="text"
                     required
                     value={jobForm.qualification}
                     onChange={(e) => setJobForm({ ...jobForm, qualification: e.target.value })}
-                    placeholder="उदा. बी.टेक (सिविल) / आईटीआई"
+                    placeholder={isHi ? 'उदा. बी.टेक (सिविल) / आईटीआई' : 'e.g. B.Tech / Diploma / ITI'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">कुल कार्य अनुभव *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'कुल कार्य अनुभव *' : 'Work Experience *'}</label>
                   <input
                     type="text"
                     required
                     value={jobForm.experienceYears}
                     onChange={(e) => setJobForm({ ...jobForm, experienceYears: e.target.value })}
-                    placeholder="उदा. 3 वर्ष अथवा फ्रेशर"
+                    placeholder={isHi ? 'उदा. 3 वर्ष अथवा फ्रेशर' : 'e.g. 3 years or Fresher'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
@@ -847,20 +864,22 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700">
-                  तकनीकी कौशल व सॉफ्टवेयर ज्ञान
+                  {isHi ? 'तकनीकी कौशल व सॉफ्टवेयर ज्ञान' : 'Technical Skills & Software'}
                 </label>
                 <input
                   type="text"
                   value={jobForm.skills}
                   onChange={(e) => setJobForm({ ...jobForm, skills: e.target.value })}
-                  placeholder="उदा. AutoCAD, CNC Programming, SketchUp, MS Office..."
+                  placeholder={isHi ? 'उदा. AutoCAD, CNC Programming, SketchUp...' : 'e.g. AutoCAD, CNC, SketchUp...'}
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700">
-                  रिज्यूमे अथवा पोर्टफोलियो लिंक (Google Drive / LinkedIn / Behance)
+                  {isHi
+                    ? 'रिज्यूमे अथवा पोर्टफोलियो लिंक (Google Drive / LinkedIn / Behance)'
+                    : 'Resume or Portfolio Link (Google Drive / LinkedIn)'}
                 </label>
                 <input
                   type="url"
@@ -880,7 +899,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                   }}
                   className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
-                  रद्द करें
+                  {isHi ? 'रद्द करें' : 'Cancel'}
                 </button>
 
                 <button
@@ -888,7 +907,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                   className="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all"
                 >
                   <Briefcase className="w-4 h-4 text-amber-200" />
-                  <span>आवेदन सबमिट करें</span>
+                  <span>{isHi ? 'आवेदन सबमिट करें' : 'Submit Application'}</span>
                 </button>
               </div>
             </form>
@@ -905,13 +924,13 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
             <div className="flex items-start justify-between border-b border-stone-100 pb-3">
               <div>
                 <span className="text-[11px] font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">
-                  मेधावी छात्रवृत्ति आवेदन प्रपत्र
+                  {isHi ? 'मेधावी छात्रवृत्ति आवेदन प्रपत्र' : 'Scholarship Application Form'}
                 </span>
                 <h3 className="text-xl font-bold font-display text-stone-900 mt-1">
                   {selectedScholarship.title}
                 </h3>
                 <div className="text-xs text-amber-800 font-semibold mt-0.5">
-                  सहायता राशि: {selectedScholarship.amount}
+                  {isHi ? 'सहायता राशि:' : 'Amount:'} {selectedScholarship.amount}
                 </div>
               </div>
               <button
@@ -927,29 +946,29 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
             <form onSubmit={handleScholarshipSubmit} className="space-y-4">
               {/* Photo Upload Section */}
-              {renderPhotoUploadField('विद्यार्थी पासपोर्ट फोटो')}
+              {renderPhotoUploadField(isHi ? 'विद्यार्थी पासपोर्ट फोटो' : 'Student Passport Photo')}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">विद्यार्थी का नाम *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'विद्यार्थी का नाम *' : 'Student Full Name *'}</label>
                   <input
                     type="text"
                     required
                     value={scholarshipForm.fullName}
                     onChange={(e) => setScholarshipForm({ ...scholarshipForm, fullName: e.target.value })}
-                    placeholder="उदा. पूजा शर्मा (धीमान)"
+                    placeholder={isHi ? 'उदा. पूजा शर्मा' : 'e.g. Pooja Sharma'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">पिता / अभिभावक का नाम *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'पिता / अभिभावक का नाम *' : 'Father / Guardian Name *'}</label>
                   <input
                     type="text"
                     required
                     value={scholarshipForm.fatherName}
                     onChange={(e) => setScholarshipForm({ ...scholarshipForm, fatherName: e.target.value })}
-                    placeholder="उदा. श्री सत्यनारायण शर्मा"
+                    placeholder={isHi ? 'उदा. श्री सत्यनारायण शर्मा' : 'e.g. Satyanarayan Sharma'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
@@ -957,19 +976,19 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">उपजाति / गोत्र *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'उपजाति / गोत्र *' : 'Subcaste / Gotra *'}</label>
                   <input
                     type="text"
                     required
                     value={scholarshipForm.subcaste}
                     onChange={(e) => setScholarshipForm({ ...scholarshipForm, subcaste: e.target.value })}
-                    placeholder="उदा. जांगिड़ / कश्यप गोत्र"
+                    placeholder={isHi ? 'उदा. जांगिड़ / कश्यप गोत्र' : 'e.g. Jangid / Kashyap'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">मोबाइल / व्हाट्सएप नंबर *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'मोबाइल / व्हाट्सएप नंबर *' : 'Mobile / WhatsApp Number *'}</label>
                   <input
                     type="tel"
                     required
@@ -983,25 +1002,25 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">अध्ययनरत कॉलेज / विश्वविद्यालय *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'अध्ययनरत कॉलेज / विश्वविद्यालय *' : 'College / University *'}</label>
                   <input
                     type="text"
                     required
                     value={scholarshipForm.college}
                     onChange={(e) => setScholarshipForm({ ...scholarshipForm, college: e.target.value })}
-                    placeholder="उदा. एमएनआईटी जयपुर"
+                    placeholder={isHi ? 'उदा. एमएनआईटी जयपुर' : 'e.g. National Institute of Tech'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">पाठ्यक्रम व वर्तमान वर्ष *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'पाठ्यक्रम व वर्तमान वर्ष *' : 'Course & Academic Year *'}</label>
                   <input
                     type="text"
                     required
                     value={scholarshipForm.course}
                     onChange={(e) => setScholarshipForm({ ...scholarshipForm, course: e.target.value })}
-                    placeholder="उदा. बी.टेक तृतीय वर्ष (सिविल)"
+                    placeholder={isHi ? 'उदा. बी.टेक तृतीय वर्ष' : 'e.g. B.Tech 3rd Year'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
@@ -1009,7 +1028,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">गत परीक्षा प्राप्तांक (%) *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'गत परीक्षा प्राप्तांक (%) *' : 'Previous Exam Score (%) *'}</label>
                   <input
                     type="text"
                     required
@@ -1021,7 +1040,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">पारिवारिक वार्षिक आय *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'पारिवारिक वार्षिक आय *' : 'Annual Family Income *'}</label>
                   <input
                     type="text"
                     required
@@ -1033,13 +1052,13 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">मूल निवास शहर / राज्य *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'मूल निवास शहर / राज्य *' : 'City / State *'}</label>
                   <input
                     type="text"
                     required
                     value={scholarshipForm.city}
                     onChange={(e) => setScholarshipForm({ ...scholarshipForm, city: e.target.value })}
-                    placeholder="उदा. जोधपुर, राज."
+                    placeholder={isHi ? 'उदा. जोधपुर, राज.' : 'e.g. Jodhpur, Raj.'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
@@ -1047,7 +1066,9 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700">
-                  बैंक खाता विवरण (छात्रवृत्ति हस्तांतरण हेतु - बैंक नाम, खाता संख्या, IFSC)
+                  {isHi
+                    ? 'बैंक खाता विवरण (बैंक नाम, खाता संख्या, IFSC)'
+                    : 'Bank Account Details (Bank Name, A/C No, IFSC)'}
                 </label>
                 <input
                   type="text"
@@ -1067,7 +1088,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                   }}
                   className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
-                  रद्द करें
+                  {isHi ? 'रद्द करें' : 'Cancel'}
                 </button>
 
                 <button
@@ -1075,7 +1096,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                   className="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all"
                 >
                   <GraduationCap className="w-4 h-4 text-amber-200" />
-                  <span>छात्रवृत्ति आवेदन सबमिट करें</span>
+                  <span>{isHi ? 'छात्रवृत्ति आवेदन सबमिट करें' : 'Submit Scholarship Application'}</span>
                 </button>
               </div>
             </form>
@@ -1092,7 +1113,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
             <div className="flex items-start justify-between border-b border-stone-100 pb-3">
               <div>
                 <span className="text-[11px] font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">
-                  निःशुल्क कौशल कार्यशाला सीट आरक्षण
+                  {isHi ? 'निःशुल्क कौशल कार्यशाला सीट आरक्षण' : 'Free Skill Workshop Seat Booking'}
                 </span>
                 <h3 className="text-xl font-bold font-display text-stone-900 mt-1">
                   {selectedWorkshop.title}
@@ -1114,23 +1135,23 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
             <form onSubmit={handleWorkshopSubmit} className="space-y-4">
               {/* Photo Upload Section */}
-              {renderPhotoUploadField('प्रतिभागी पासपोर्ट फोटो')}
+              {renderPhotoUploadField(isHi ? 'प्रतिभागी पासपोर्ट फोटो' : 'Participant Passport Photo')}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">प्रतिभागी का नाम *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'प्रतिभागी का नाम *' : 'Participant Name *'}</label>
                   <input
                     type="text"
                     required
                     value={workshopForm.fullName}
                     onChange={(e) => setWorkshopForm({ ...workshopForm, fullName: e.target.value })}
-                    placeholder="उदा. विक्रम सुथार"
+                    placeholder={isHi ? 'उदा. विक्रम सुथार' : 'e.g. Vikram Suthar'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">आयु (वर्ष) *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'आयु (वर्ष) *' : 'Age (Years) *'}</label>
                   <input
                     type="number"
                     required
@@ -1138,7 +1159,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                     max="65"
                     value={workshopForm.age}
                     onChange={(e) => setWorkshopForm({ ...workshopForm, age: e.target.value })}
-                    placeholder="उदा. 24"
+                    placeholder={isHi ? 'उदा. 24' : 'e.g. 24'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
@@ -1146,7 +1167,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">मोबाइल / व्हाट्सएप नंबर *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'मोबाइल / व्हाट्सएप नंबर *' : 'Mobile / WhatsApp Number *'}</label>
                   <input
                     type="tel"
                     required
@@ -1158,7 +1179,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">ईमेल *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'ईमेल *' : 'Email *'}</label>
                   <input
                     type="email"
                     required
@@ -1172,52 +1193,64 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">वर्तमान कार्य / पेशा *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'वर्तमान कार्य / पेशा *' : 'Current Profession / Work *'}</label>
                   <input
                     type="text"
                     required
                     value={workshopForm.profession}
                     onChange={(e) => setWorkshopForm({ ...workshopForm, profession: e.target.value })}
-                    placeholder="उदा. पारंपरिक काष्ठशिल्पी / छात्र"
+                    placeholder={isHi ? 'उदा. पारंपरिक काष्ठशिल्पी / छात्र' : 'e.g. Woodcraft Artisan / Student'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">शहर व राज्य *</label>
+                  <label className="text-xs font-bold text-stone-700">{isHi ? 'शहर व राज्य *' : 'City & State *'}</label>
                   <input
                     type="text"
                     required
                     value={workshopForm.city}
                     onChange={(e) => setWorkshopForm({ ...workshopForm, city: e.target.value })}
-                    placeholder="उदा. अहमदाबाद, गुजरात"
+                    placeholder={isHi ? 'उदा. अहमदाबाद, गुजरात' : 'e.g. Ahmedabad, Gujarat'}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-stone-700">बैच प्राथमिकता *</label>
+                <label className="text-xs font-bold text-stone-700">{isHi ? 'बैच प्राथमिकता *' : 'Batch Preference *'}</label>
                 <select
                   value={workshopForm.batchPreference}
                   onChange={(e) => setWorkshopForm({ ...workshopForm, batchPreference: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                 >
-                  <option value="शनिवार प्रातः 10:00 से 01:00">शनिवार प्रातः 10:00 से 01:00</option>
-                  <option value="रविवार दोपहर 02:00 से 05:00">रविवार दोपहर 02:00 से 05:00</option>
-                  <option value="सप्ताह के दिन (शाम 06:00 से 08:00)">सप्ताह के दिन (शाम 06:00 से 08:00)</option>
+                  <option value={isHi ? 'शनिवार प्रातः 10:00 से 01:00' : 'Saturday Morning 10:00 to 01:00'}>
+                    {isHi ? 'शनिवार प्रातः 10:00 से 01:00' : 'Saturday Morning 10:00 to 01:00'}
+                  </option>
+                  <option value={isHi ? 'रविवार दोपहर 02:00 से 05:00' : 'Sunday Afternoon 02:00 to 05:00'}>
+                    {isHi ? 'रविवार दोपहर 02:00 से 05:00' : 'Sunday Afternoon 02:00 to 05:00'}
+                  </option>
+                  <option value={isHi ? 'सप्ताह के दिन (शाम 06:00 से 08:00)' : 'Weekdays (Evening 06:00 to 08:00)'}>
+                    {isHi ? 'सप्ताह के दिन (शाम 06:00 से 08:00)' : 'Weekdays (Evening 06:00 to 08:00)'}
+                  </option>
                 </select>
               </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700">
-                  इस कार्यशाला से आप विशेष रूप से क्या सीखना चाहते हैं?
+                  {isHi
+                    ? 'इस कार्यशाला से आप विशेष रूप से क्या सीखना चाहते हैं?'
+                    : 'What specific skills would you like to master in this workshop?'}
                 </label>
                 <textarea
                   rows={2}
                   value={workshopForm.learningGoal}
                   onChange={(e) => setWorkshopForm({ ...workshopForm, learningGoal: e.target.value })}
-                  placeholder="उदा. सीएनसी रूटिंग, 3D डिजाइनिंग अथवा अपने पारिवारिक शिल्प को आधुनिक रूप देना..."
+                  placeholder={
+                    isHi
+                      ? 'उदा. सीएनसी रूटिंग, 3D डिजाइनिंग अथवा अपने पारिवारिक शिल्प को आधुनिक रूप देना...'
+                      : 'e.g. CNC routing, 3D cad design, or modernizing traditional artisan craft...'
+                  }
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                 />
               </div>
@@ -1231,7 +1264,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                   }}
                   className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
-                  रद्द करें
+                  {isHi ? 'रद्द करें' : 'Cancel'}
                 </button>
 
                 <button
@@ -1239,7 +1272,7 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                   className="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all"
                 >
                   <Compass className="w-4 h-4 text-amber-200" />
-                  <span>सीट आरक्षित करें (Confirm Seat)</span>
+                  <span>{isHi ? 'सीट आरक्षित करें' : 'Confirm Seat'}</span>
                 </button>
               </div>
             </form>
@@ -1260,11 +1293,13 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
               </div>
               <div className="text-xs sm:text-sm leading-relaxed">
                 <div className="font-bold text-base flex items-center gap-1.5">
-                  <span>आवेदन सफलतापूर्वक पंजीकृत!</span>
+                  <span>{isHi ? 'आवेदन सफलतापूर्वक पंजीकृत!' : 'Application Successfully Registered!'}</span>
                   <Sparkles className="w-4 h-4 text-amber-300" />
                 </div>
                 <div className="text-emerald-100 text-xs mt-0.5">
-                  आपकी आधिकारिक पावती (E-Receipt) जनरेट हो चुकी है तथा रिकॉर्ड दर्ज कर लिया गया है।
+                  {isHi
+                    ? 'आपकी आधिकारिक पावती (E-Receipt) जनरेट हो चुकी है तथा रिकॉर्ड दर्ज कर लिया गया है।'
+                    : 'Your official E-Receipt has been generated and the record has been securely submitted.'}
                 </div>
               </div>
             </div>
@@ -1278,14 +1313,16 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
               <div className="flex items-center justify-between border-b-2 border-amber-700/30 pb-3">
                 <div>
                   <div className="text-[11px] font-bold text-amber-900">
-                    ॐ श्री विश्वकर्मणे नमः · अखिल भारतीय विश्वकर्मा युवा व शिक्षा प्रकोष्ठ
+                    {isHi
+                      ? 'ॐ श्री विश्वकर्मणे नमः · अखिल भारतीय विश्वकर्मा युवा व शिक्षा प्रकोष्ठ'
+                      : 'Om Shri Vishwakarma Namah · All India Vishwakarma Youth & Education Wing'}
                   </div>
                   <div className="text-xs font-mono text-stone-500 mt-0.5">
-                    पंजीकरण सं.: <strong>{confirmationData.regNumber}</strong>
+                    {isHi ? 'पंजीकरण सं.:' : 'Reg No:'} <strong>{confirmationData.regNumber}</strong>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full">
-                  स्वीकृत व अग्रेषित
+                  {isHi ? 'स्वीकृत व अग्रेषित' : 'Verified & Approved'}
                 </span>
               </div>
 
@@ -1302,10 +1339,10 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                 <div className="space-y-1 min-w-0">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-amber-900 bg-amber-100 px-2 py-0.5 rounded inline-block">
                     {confirmationData.type === 'job'
-                      ? 'रोजगार अभ्यर्थी (Job Candidate)'
+                      ? (isHi ? 'रोजगार अभ्यर्थी (Job Candidate)' : 'Job Candidate')
                       : confirmationData.type === 'scholarship'
-                      ? 'छात्रवृत्ति लाभार्थी (Scholarship)'
-                      : 'कार्यशाला प्रतिभागी (Workshop)'}
+                      ? (isHi ? 'छात्रवृत्ति लाभार्थी (Scholarship)' : 'Scholarship Beneficiary')
+                      : (isHi ? 'कार्यशाला प्रतिभागी (Workshop)' : 'Workshop Participant')}
                   </div>
                   <h4 className="text-lg font-bold text-stone-900 font-display">
                     {confirmationData.applicantName}
@@ -1323,11 +1360,11 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
               <div className="bg-white/90 rounded-2xl p-4 border border-amber-200 text-xs space-y-2">
                 <div className="grid grid-cols-2 gap-2 pb-2 border-b border-stone-100">
                   <div>
-                    <span className="text-stone-400 block text-[10px]">मोबाइल:</span>
+                    <span className="text-stone-400 block text-[10px]">{isHi ? 'मोबाइल:' : 'Mobile:'}</span>
                     <span className="font-semibold text-stone-800 font-mono">{confirmationData.phone}</span>
                   </div>
                   <div>
-                    <span className="text-stone-400 block text-[10px]">ईमेल:</span>
+                    <span className="text-stone-400 block text-[10px]">{isHi ? 'ईमेल:' : 'Email:'}</span>
                     <span className="font-semibold text-stone-800 font-mono truncate block">{confirmationData.email}</span>
                   </div>
                 </div>
@@ -1353,13 +1390,13 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                     className="w-14 h-14 rounded-lg border border-amber-300 bg-white p-1"
                   />
                   <div className="text-[11px] text-stone-600 leading-tight">
-                    <div className="font-bold text-stone-900">डिजिटल सत्यापन क्यूआर</div>
-                    <div>अभिलेख सत्यापन हेतु प्रस्तुत करें।</div>
+                    <div className="font-bold text-stone-900">{isHi ? 'डिजिटल सत्यापन क्यूआर' : 'Digital Verification QR'}</div>
+                    <div>{isHi ? 'अभिलेख सत्यापन हेतु प्रस्तुत करें।' : 'Scan for instant authentication.'}</div>
                   </div>
                 </div>
 
                 <div className="text-right text-[10px] text-stone-500">
-                  <div>पंजीकरण तिथि:</div>
+                  <div>{isHi ? 'पंजीकरण तिथि:' : 'Reg Date:'}</div>
                   <div className="font-mono font-bold text-stone-800">
                     {confirmationData.date}
                   </div>
@@ -1374,14 +1411,14 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
                 className="py-2.5 px-4 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>ई-पावती प्रिंट / PDF सेव करें</span>
+                <span>{isHi ? 'ई-पावती प्रिंट / PDF सेव करें' : 'Print E-Receipt / Save PDF'}</span>
               </button>
 
               <button
                 onClick={() => setConfirmationData(null)}
                 className="py-2.5 px-6 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
-                समाप्त करें
+                {isHi ? 'समाप्त करें' : 'Done'}
               </button>
             </div>
           </div>

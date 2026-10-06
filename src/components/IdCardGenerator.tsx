@@ -89,11 +89,23 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
     ctx.fillStyle = '#fde68a';
     ctx.font = 'bold 20px "Plus Jakarta Sans", system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(activeConfig.issuingAuthority || 'अखिल भारतीय विश्वकर्मा समाज महासंघ', 55, 68);
+    ctx.fillText(
+      isHi
+        ? (activeConfig.issuingAuthority || 'अखिल भारतीय विश्वकर्मा समाज महासंघ')
+        : (activeConfig.issuingAuthorityEn || 'All India Vishwakarma Samaj Federation'),
+      55,
+      68
+    );
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 30px "Rozha One", Georgia, serif';
-    ctx.fillText(activeConfig.titleHi || 'विश्वकर्मा डिजिटल सदस्यता पहचान पत्र', 55, 110);
+    ctx.fillText(
+      isHi
+        ? (activeConfig.titleHi || 'विश्वकर्मा डिजिटल सदस्यता पहचान पत्र')
+        : (activeConfig.titleEn || 'Vishwakarma Digital Membership Identity Card'),
+      55,
+      110
+    );
 
     // 5. Sacred OM Circle Insignia
     ctx.strokeStyle = '#f59e0b';
@@ -172,7 +184,7 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
       ctx.fillStyle = '#f59e0b';
       ctx.font = 'bold 80px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(formData.fullName.trim().slice(0, 1) || 'वि', px + pw / 2, py + ph / 2 + 28);
+      ctx.fillText(formData.fullName.trim().slice(0, 1) || (isHi ? 'वि' : 'V'), px + pw / 2, py + ph / 2 + 28);
     }
 
     // 8. Member Details Section
@@ -181,7 +193,7 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
     // Full Name
     ctx.fillStyle = '#fde68a';
     ctx.font = '16px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText('सदस्य नाम / Member Name:', 290, 192);
+    ctx.fillText(isHi ? 'सदस्य का नाम:' : 'Member Name:', 290, 192);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 34px "Plus Jakarta Sans", sans-serif';
@@ -190,14 +202,14 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
     // Grid of Attributes
     ctx.fillStyle = '#fef3c7';
     ctx.font = '20px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(`पिता / पति:  ${formData.fatherOrHusbandName}`, 290, 285);
-    ctx.fillText(`शाखा:  ${formData.subcaste}`, 290, 330);
-    ctx.fillText(`गोत्र:  ${formData.gotra}`, 640, 330);
+    ctx.fillText(`${isHi ? 'पिता / पति:' : 'Father / Husband:'}  ${formData.fatherOrHusbandName}`, 290, 285);
+    ctx.fillText(`${isHi ? 'शाखा:' : 'Subcaste:'}  ${formData.subcaste}`, 290, 330);
+    ctx.fillText(`${isHi ? 'गोत्र:' : 'Gotra:'}  ${formData.gotra}`, 640, 330);
 
-    ctx.fillText(`रक्त समूह:  ${formData.bloodGroup}`, 290, 375);
-    ctx.fillText(`जन्म तिथि:  ${formData.dob}`, 640, 375);
+    ctx.fillText(`${isHi ? 'रक्त समूह:' : 'Blood Group:'}  ${formData.bloodGroup}`, 290, 375);
+    ctx.fillText(`${isHi ? 'जन्म तिथि:' : 'DOB:'}  ${formData.dob}`, 640, 375);
 
-    ctx.fillText(`निवास:  ${formData.city}, ${formData.state}`, 290, 420);
+    ctx.fillText(`${isHi ? 'निवास:' : 'Residence:'}  ${formData.city}, ${formData.state}`, 290, 420);
 
     // 9. Bottom Divider Line
     ctx.strokeStyle = 'rgba(217, 119, 6, 0.45)';
@@ -211,21 +223,25 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
     ctx.textAlign = 'left';
     ctx.fillStyle = '#fde68a';
     ctx.font = 'bold 22px monospace';
-    ctx.fillText(`सदस्यता क्र.: ${formData.membershipId}`, 55, 524);
+    ctx.fillText(`${isHi ? 'सदस्यता क्र.:' : 'Membership ID:'} ${formData.membershipId}`, 55, 524);
 
     ctx.fillStyle = '#fef3c7';
     ctx.font = '18px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(`सत्यापित तिथि: ${formData.issueDate}  |  मो.: ${formData.mobile}`, 55, 564);
+    ctx.fillText(
+      `${isHi ? 'सत्यापित तिथि:' : 'Issue Date:'} ${formData.issueDate}  |  ${isHi ? 'मो.:' : 'Mobile:'} ${formData.mobile}`,
+      55,
+      564
+    );
 
     // Right Side Seal & Motto
     ctx.textAlign = 'right';
     ctx.font = 'italic bold 24px serif';
     ctx.fillStyle = '#fef3c7';
-    ctx.fillText('॥ श्री विश्वकर्माय नमः ॥', w - 55, 524);
+    ctx.fillText(isHi ? '॥ श्री विश्वकर्माय नमः ॥' : '॥ Shri Vishwakarma Namah ॥', w - 55, 524);
 
     ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
     ctx.fillStyle = '#fbbf24';
-    ctx.fillText('अधिकृत समाज पहचान पत्र [सत्यापित]', w - 55, 564);
+    ctx.fillText(isHi ? 'अधिकृत समाज पहचान पत्र [सत्यापित]' : 'Official Community ID Card [Verified]', w - 55, 564);
 
     return canvas.toDataURL('image/png');
   };
@@ -235,7 +251,7 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
     generateCardCanvasDataUrl().then((url) => {
       setRenderedCardDataUrl(url);
     }).catch(() => {});
-  }, [formData]);
+  }, [formData, isHi]);
 
   // Download Handler
   const handleDownload = async () => {
@@ -458,7 +474,7 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
                 <input
                   type="file"
                   ref={fileInputRef}
-                  accept="image/*"
+                  accept="image/png, image/jpeg, image/jpg, image/webp"
                   onChange={handlePhotoUpload}
                   className="hidden"
                 />
@@ -469,16 +485,16 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
                   className="px-3.5 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>{isHi ? 'गैलरी / फाइल से फोटो चुनें' : 'Choose Photo from Device'}</span>
+                  <span>{isHi ? 'गैलरी / फाइल से फोटो चुनें (PNG/JPG)' : 'Choose Photo from Device (PNG/JPG)'}</span>
                 </button>
 
                 {photoFileName ? (
                   <div className="text-[11px] text-emerald-800 font-medium truncate">
-                    ✓ अपलोड: {photoFileName}
+                    {isHi ? `✓ फोटो चयनित: ${photoFileName}` : `✓ Photo Selected: ${photoFileName}`}
                   </div>
                 ) : (
                   <div className="text-[11px] text-stone-500">
-                    JPG, PNG या WEBP फोटो चुनें
+                    {isHi ? 'मोबाइल या कंप्यूटर से PNG या JPG फोटो चुनें' : 'Choose PNG or JPG photo from Mobile or PC'}
                   </div>
                 )}
               </div>
@@ -526,7 +542,7 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
                   className="w-full px-3 py-2 border border-stone-200 rounded-lg text-xs"
                 />
                 <datalist id="idcard-subcastes">
-                  {(activeConfig.subcastes || []).map((sc) => (
+                  {(activeConfig.subcastes || []).map((sc: string) => (
                     <option key={sc} value={sc} />
                   ))}
                 </datalist>
@@ -645,10 +661,14 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
             <div className="relative z-10 border-b border-amber-600/40 pb-2 flex items-center justify-between">
               <div>
                 <div className="text-[10px] sm:text-xs tracking-widest text-amber-300 uppercase font-semibold font-hindi">
-                  अखिल भारतीय विश्वकर्मा समाज महासंघ
+                  {isHi
+                    ? (activeConfig.issuingAuthority || 'अखिल भारतीय विश्वकर्मा समाज महासंघ')
+                    : (activeConfig.issuingAuthorityEn || 'All India Vishwakarma Samaj Federation')}
                 </div>
                 <div className="text-sm sm:text-base font-bold font-display text-white tracking-wide">
-                  विश्वकर्मा डिजिटल सदस्यता पहचान पत्र
+                  {isHi
+                    ? (activeConfig.titleHi || 'विश्वकर्मा डिजिटल सदस्यता पहचान पत्र')
+                    : (activeConfig.titleEn || 'Vishwakarma Digital Membership Identity Card')}
                 </div>
               </div>
               <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center font-display text-amber-300 text-xs font-bold shrink-0">
@@ -669,7 +689,7 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
                   />
                 ) : (
                   <div className="text-amber-400 font-bold text-2xl font-serif">
-                    {formData.fullName.slice(0, 1) || 'वि'}
+                    {formData.fullName.slice(0, 1) || (isHi ? 'वि' : 'V')}
                   </div>
                 )}
               </div>
@@ -677,7 +697,9 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
               {/* Member Data */}
               <div className="flex-1 space-y-1 text-xs">
                 <div>
-                  <div className="text-[10px] text-amber-300/80 uppercase">सदस्य नाम:</div>
+                  <div className="text-[10px] text-amber-300/80 uppercase">
+                    {isHi ? 'सदस्य का नाम:' : 'Member Name:'}
+                  </div>
                   <div className="font-bold text-white text-sm sm:text-base leading-none">
                     {formData.fullName}
                   </div>
@@ -685,23 +707,23 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
 
                 <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] pt-1">
                   <div>
-                    <span className="text-amber-200/70">पिता/पति: </span>
+                    <span className="text-amber-200/70">{isHi ? 'पिता/पति: ' : 'Father/Husband: '}</span>
                     <span className="text-white font-medium truncate block">{formData.fatherOrHusbandName}</span>
                   </div>
                   <div>
-                    <span className="text-amber-200/70">शाखा: </span>
+                    <span className="text-amber-200/70">{isHi ? 'शाखा: ' : 'Subcaste: '}</span>
                     <span className="text-white font-medium">{formData.subcaste}</span>
                   </div>
                   <div>
-                    <span className="text-amber-200/70">गोत्र: </span>
+                    <span className="text-amber-200/70">{isHi ? 'गोत्र: ' : 'Gotra: '}</span>
                     <span className="text-white font-medium">{formData.gotra}</span>
                   </div>
                   <div>
-                    <span className="text-amber-200/70">रक्त समूह: </span>
+                    <span className="text-amber-200/70">{isHi ? 'रक्त समूह: ' : 'Blood Group: '}</span>
                     <span className="text-amber-300 font-bold">{formData.bloodGroup}</span>
                   </div>
                   <div className="col-span-2 truncate">
-                    <span className="text-amber-200/70">निवास: </span>
+                    <span className="text-amber-200/70">{isHi ? 'निवास: ' : 'Residence: '}</span>
                     <span className="text-white font-medium">{formData.city}, {formData.state}</span>
                   </div>
                 </div>
@@ -711,16 +733,21 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
             {/* Card Footer (NO QR CODE - Removed cleanly as requested) */}
             <div className="relative z-10 border-t border-amber-600/40 pt-2 flex items-center justify-between text-[10px] text-amber-300/80">
               <div>
-                <div>सदस्यता क्र.: <span className="font-mono text-white font-bold">{formData.membershipId}</span></div>
-                <div>सत्यापित तिथि: {formData.issueDate}  |  मो.: {formData.mobile}</div>
+                <div>
+                  {isHi ? 'सदस्यता क्र.:' : 'Membership ID:'}{' '}
+                  <span className="font-mono text-white font-bold">{formData.membershipId}</span>
+                </div>
+                <div>
+                  {isHi ? 'सत्यापित तिथि:' : 'Issue Date:'} {formData.issueDate} | {isHi ? 'मो.:' : 'Mobile:'} {formData.mobile}
+                </div>
               </div>
 
               <div className="text-right">
                 <div className="text-[10px] text-amber-200 font-display italic">
-                  ॥ श्री विश्वकर्माय नमः ॥
+                  {isHi ? '॥ श्री विश्वकर्माय नमः ॥' : '॥ Shri Vishwakarma Namah ॥'}
                 </div>
                 <div className="text-[9px] text-amber-400/90 font-semibold">
-                  अधिकृत समाज मुहर [सत्यापित]
+                  {isHi ? 'अधिकृत समाज पहचान पत्र [सत्यापित]' : 'Official Community ID [Verified]'}
                 </div>
               </div>
             </div>
@@ -747,7 +774,7 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
               className="py-2.5 px-4 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>{isHi ? 'प्रिंट करें (Print)' : 'Print'}</span>
+              <span>{isHi ? 'प्रिंट करें' : 'Print'}</span>
             </button>
           </div>
 
