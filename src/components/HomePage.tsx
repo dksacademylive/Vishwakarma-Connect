@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Post, Language, NavTab } from '../types';
+import { Post, Language, NavTab, OrgContactInfo } from '../types';
 import { HeroBanner } from './HeroBanner';
 import { HomeEnhancements } from './HomeEnhancements';
 import { DonationModal } from './DonationModal';
@@ -32,6 +32,7 @@ interface HomePageProps {
   lang: Language;
   founderData?: FounderInfo;
   teamMembers?: TeamMember[];
+  orgContact?: OrgContactInfo;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -43,6 +44,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   lang,
   founderData,
   teamMembers,
+  orgContact,
 }) => {
   const isHi = lang === 'hi';
   const [isDonateOpen, setIsDonateOpen] = useState<boolean>(false);
@@ -323,6 +325,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           onOpenCreatePost={onOpenCreatePost}
           founderData={founderData}
           teamMembers={teamMembers}
+          orgContact={orgContact}
         />
       </div>
 

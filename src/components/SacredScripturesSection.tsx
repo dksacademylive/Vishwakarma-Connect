@@ -509,7 +509,7 @@ export const SacredScripturesSection: React.FC<SacredScripturesSectionProps> = (
           <span>{isHi ? '← वापस मुख्य तीर्थ व इतिहास पर जाएं' : '← Return to Heritage & Temples'}</span>
         </button>
 
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 px-0.5">
           <span className="text-xs text-stone-500 font-semibold shrink-0">
             {isHi ? 'धर्मग्रन्थ अध्ययन चुनें:' : 'Select Scripture:'}
           </span>
@@ -517,7 +517,7 @@ export const SacredScripturesSection: React.FC<SacredScripturesSectionProps> = (
             <button
               key={sc.id}
               onClick={() => setSelectedScriptureId(sc.id)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 sc.id === selectedScriptureId
                   ? 'bg-amber-900 text-white shadow-xs'
                   : 'bg-stone-100 text-stone-700 hover:bg-stone-200'

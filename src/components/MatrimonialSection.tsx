@@ -528,10 +528,10 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
             />
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none px-0.5">
             <button
               onClick={() => setGenderFilter('all')}
-              className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 genderFilter === 'all'
                   ? 'bg-amber-900 text-white shadow-xs'
                   : 'bg-white text-stone-600 border border-stone-200 hover:text-stone-900'
@@ -541,7 +541,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
             </button>
             <button
               onClick={() => setGenderFilter('groom')}
-              className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 genderFilter === 'groom'
                   ? 'bg-amber-900 text-white shadow-xs'
                   : 'bg-white text-stone-600 border border-stone-200 hover:text-stone-900'
@@ -551,7 +551,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
             </button>
             <button
               onClick={() => setGenderFilter('bride')}
-              className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 genderFilter === 'bride'
                   ? 'bg-amber-900 text-white shadow-xs'
                   : 'bg-white text-stone-600 border border-stone-200 hover:text-stone-900'
@@ -561,7 +561,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
             </button>
             <button
               onClick={() => setPrivacyFilter(privacyFilter === 'verified_only' ? 'all' : 'verified_only')}
-              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 privacyFilter === 'verified_only'
                   ? 'bg-emerald-700 text-white shadow-xs'
                   : 'bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100'
@@ -573,12 +573,12 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
           </div>
         </div>
 
-        {/* Subcaste filter pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+        {/* Subcaste filter pills (Responsive with shrink-0) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs px-0.5">
           <span className="text-stone-400 shrink-0 font-medium">{isHi ? 'शाखा:' : 'Branch:'}</span>
           <button
             onClick={() => setSubcasteFilter('all')}
-            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               subcasteFilter === 'all'
                 ? 'bg-stone-800 text-white'
                 : 'text-stone-600 hover:text-stone-900 bg-stone-100'
@@ -588,7 +588,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
           </button>
           <button
             onClick={() => setSubcasteFilter('जांगिड़')}
-            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               subcasteFilter === 'जांगिड़'
                 ? 'bg-stone-800 text-white'
                 : 'text-stone-600 hover:text-stone-900 bg-stone-100'
@@ -598,7 +598,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
           </button>
           <button
             onClick={() => setSubcasteFilter('पांचाल')}
-            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               subcasteFilter === 'पांचाल'
                 ? 'bg-stone-800 text-white'
                 : 'text-stone-600 hover:text-stone-900 bg-stone-100'
@@ -608,7 +608,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
           </button>
           <button
             onClick={() => setSubcasteFilter('धीमान')}
-            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               subcasteFilter === 'धीमान'
                 ? 'bg-stone-800 text-white'
                 : 'text-stone-600 hover:text-stone-900 bg-stone-100'
@@ -618,7 +618,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
           </button>
           <button
             onClick={() => setSubcasteFilter('स्वर्णकार')}
-            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               subcasteFilter === 'स्वर्णकार'
                 ? 'bg-stone-800 text-white'
                 : 'text-stone-600 hover:text-stone-900 bg-stone-100'

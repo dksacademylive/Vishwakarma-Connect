@@ -36,7 +36,15 @@ import {
   GraduationCap,
   Award,
   Upload,
-  Database
+  Database,
+  Share2,
+  Globe,
+  MessageCircle,
+  Youtube,
+  Facebook,
+  Twitter,
+  Instagram,
+  Send
 } from 'lucide-react';
 import {
   StoredApplication,
@@ -104,7 +112,7 @@ interface AdminPanelModalProps {
   initialTab?: AdminTab;
 }
 
-type AdminTab = 'applications' | 'president' | 'team' | 'office' | 'donation' | 'schemes' | 'events' | 'security';
+type AdminTab = 'applications' | 'president' | 'team' | 'office' | 'social' | 'donation' | 'schemes' | 'events' | 'security';
 
 export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   isOpen,
@@ -159,6 +167,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       if (isOpen) {
         loadData();
       }
+    } else {
+      setIsAuthenticated(false);
+      setPinInput('');
+      setPinError('');
     }
   }, [isAuthenticatedProp, isOpen]);
 
@@ -763,7 +775,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-2xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fadeIn font-hindi">
-      <div className="bg-white rounded-3xl max-w-6xl w-full shadow-2xl border border-stone-200 max-h-[96vh] flex flex-col overflow-hidden my-auto">
+      <div className="bg-white rounded-3xl w-[98vw] max-w-7xl shadow-2xl border border-stone-200 max-h-[96vh] flex flex-col overflow-hidden my-auto">
         {/* Top Header */}
         <div className="bg-gradient-to-r from-stone-950 via-[#26140b] to-stone-950 text-white p-4 sm:p-5 flex items-center justify-between shrink-0 border-b border-amber-900/60">
           <div className="flex items-center gap-3">
@@ -812,72 +824,16 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
         {/* PIN Authentication Gate */}
         {!isAuthenticated ? (
-          <div className="p-8 sm:p-12 text-center max-w-md mx-auto space-y-6 my-auto">
+          <div className="p-6 sm:p-10 text-center max-w-md mx-auto space-y-6 my-auto">
             <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center mx-auto shadow-inner border border-amber-300">
               <KeyRound className="w-8 h-8 text-amber-800" />
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-1.5">
               <h4 className="text-xl font-bold text-stone-900">समाज प्रबंधक / एडमिन लॉगिन</h4>
               <p className="text-xs text-stone-500">
-                गोपनीय डेटा व फॉर्म सेटिंग्स संपादित करने हेतु व्यवस्थापक पासकोड दर्ज करें।
+                गोपनीय डेटा, सूचनाएं व सेटिंग्स संपादित करने हेतु व्यवस्थापक पासकोड दर्ज करें।
               </p>
-              
-              {/* Prominent Passcode Box (पासकोड स्पष्ट रूप से प्रदर्शित) */}
-              <div className="p-3.5 bg-gradient-to-r from-amber-100 via-amber-50 to-orange-100 border-2 border-amber-400 rounded-2xl text-left shadow-sm space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-amber-800" />
-                    <span>सक्रिय व्यवस्थापक पासकोड (Admin Passcode):</span>
-                  </span>
-                  <span className="text-[10px] font-bold bg-amber-300 text-stone-950 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    सत्यापित PIN
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 pt-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-mono font-black text-amber-950 tracking-widest bg-white px-3.5 py-1 rounded-xl border border-amber-300 shadow-inner">
-                      {currentPin}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(currentPin);
-                        setCopiedPin(true);
-                        setTimeout(() => setCopiedPin(false), 2000);
-                      }}
-                      className="px-2 py-1 text-xs font-semibold text-amber-900 bg-amber-200 hover:bg-amber-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
-                      title="पासकोड कॉपी करें"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>{copiedPin ? 'कॉपी हुआ!' : 'कॉपी'}</span>
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPinInput(currentPin);
-                      setIsAuthenticated(true);
-                      setPinError('');
-                      onLoginSuccess?.();
-                      loadData();
-                    }}
-                    className="px-3 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold rounded-xl cursor-pointer text-xs transition-all shadow-xs flex items-center gap-1.5"
-                    title="पासकोड स्वतः भरें और सीधे प्रवेश करें"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-200" />
-                    <span>1-क्लिक प्रवेश करें</span>
-                  </button>
-                </div>
-
-                <div className="text-[11px] text-stone-600 font-medium">
-                  {isHi
-                    ? 'नोट: व्यवस्थापक हेतु डिफ़ॉल्ट पासकोड 1234 है। आप ऊपर "1-क्लिक प्रवेश" दबाकर तुरंत लॉगिन कर सकते हैं।'
-                    : 'Note: Default Admin Passcode is 1234. Click "1-Click Login" to enter immediately.'}
-                </div>
-              </div>
             </div>
 
             <form onSubmit={handlePinSubmit} className="space-y-4">
@@ -887,7 +843,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   autoFocus
                   value={pinInput}
                   onChange={(e) => setPinInput(e.target.value)}
-                  placeholder={`पासकोड दर्ज करें (उदा. ${currentPin})`}
+                  placeholder="पासकोड दर्ज करें (PIN)"
                   className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-300 rounded-2xl text-center text-lg tracking-widest font-mono focus:outline-none focus:border-amber-600 focus:bg-white pr-12 font-bold"
                 />
                 <button
@@ -918,6 +874,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   <span>एडमिन डैशबोर्ड में प्रवेश करें</span>
                 </button>
               </div>
+
+              <div className="text-[11px] text-stone-500 text-center">
+                सुरक्षा संकेत: डिफ़ॉल्ट व्यवस्थापक पासकोड <span className="font-mono font-bold text-amber-800">{currentPin}</span> है।
+              </div>
             </form>
           </div>
         ) : (
@@ -936,101 +896,160 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               </div>
             )}
 
-            {/* Navigation Tabs */}
-            <div className="bg-stone-100 border-b border-stone-200 px-4 pt-3 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
+            {/* Master Admin Suite Navigation Toolbar - All 9 tabs 100% visible on all screens (PC, Laptop & Mobile) */}
+            <div className="bg-stone-100/95 border-b border-stone-200 px-3 sm:px-5 py-2.5 sm:py-3 flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Tab 1: Applications */}
               <button
+                type="button"
                 onClick={() => setActiveTab('applications')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer whitespace-nowrap border-t-2 ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                   activeTab === 'applications'
-                    ? 'bg-white text-amber-900 border-amber-600 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 border-transparent hover:bg-stone-200/60'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
+                title="प्राप्त ऑनलाइन आवेदन (जॉब्स, छात्रवृत्ति, कार्यशाला)"
               >
-                <FileSpreadsheet className="w-4 h-4 text-amber-700" />
-                <span>प्राप्त आवेदन ({applications.length})</span>
+                <FileSpreadsheet className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'applications' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>प्राप्त आवेदन</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  activeTab === 'applications' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
+                }`}>
+                  {applications.length}
+                </span>
               </button>
 
+              {/* Tab 2: President & Founder */}
               <button
+                type="button"
                 onClick={() => setActiveTab('president')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer whitespace-nowrap border-t-2 ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                   activeTab === 'president'
-                    ? 'bg-white text-amber-900 border-amber-600 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 border-transparent hover:bg-stone-200/60'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
+                title="अध्यक्ष व संस्थापक संदेश एवं प्रोफाइल"
               >
-                <UserCheck className="w-4 h-4 text-amber-700" />
+                <UserCheck className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'president' ? 'text-amber-300' : 'text-amber-700'}`} />
                 <span>अध्यक्ष व संस्थापक प्रोफ़ाइल</span>
               </button>
 
+              {/* Tab 3: Team Members */}
               <button
+                type="button"
                 onClick={() => setActiveTab('team')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer whitespace-nowrap border-t-2 ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                   activeTab === 'team'
-                    ? 'bg-white text-amber-900 border-amber-600 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 border-transparent hover:bg-stone-200/60'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
+                title="राष्ट्रीय कार्यकारिणी व पदाधिकारी टीम सूची"
               >
-                <Users className="w-4 h-4 text-amber-700" />
-                <span>कार्यकारिणी व टीम ({editTeamList.length})</span>
+                <Users className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'team' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>कार्यकारिणी व टीम</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  activeTab === 'team' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
+                }`}>
+                  {editTeamList.length}
+                </span>
               </button>
 
+              {/* Tab 4: Secretariat & Office */}
               <button
+                type="button"
                 onClick={() => setActiveTab('office')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer whitespace-nowrap border-t-2 ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                   activeTab === 'office'
-                    ? 'bg-white text-amber-900 border-amber-600 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 border-transparent hover:bg-stone-200/60'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
+                title="सचिवालय पता, हेल्पलाइन व संपर्क विवरण"
               >
-                <Building className="w-4 h-4 text-amber-700" />
+                <Building className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'office' ? 'text-amber-300' : 'text-amber-700'}`} />
                 <span>सचिवालय, पता व हेल्पलाइन</span>
               </button>
 
+              {/* Tab 5: Social Media */}
               <button
-                onClick={() => setActiveTab('donation')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer whitespace-nowrap border-t-2 ${
-                  activeTab === 'donation'
-                    ? 'bg-white text-amber-900 border-amber-600 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 border-transparent hover:bg-stone-200/60'
+                type="button"
+                onClick={() => setActiveTab('social')}
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                  activeTab === 'social'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
+                title="आधिकारिक सोशल मीडिया हैंडल्स (WhatsApp, YouTube, FB, Insta, Twitter, Telegram)"
               >
-                <Heart className="w-4 h-4 text-amber-700" />
+                <Share2 className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'social' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>सोशल मीडिया लिंक्स</span>
+              </button>
+
+              {/* Tab 6: Donation & Bank */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('donation')}
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                  activeTab === 'donation'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
+                }`}
+                title="दान, बैंक खाता व अधिकृत UPI सेटिंग्स"
+              >
+                <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'donation' ? 'text-amber-300' : 'text-amber-700'}`} />
                 <span>दान व बैंक सेटिंग्स</span>
               </button>
 
+              {/* Tab 7: Forms & Schemes */}
               <button
+                type="button"
                 onClick={() => setActiveTab('schemes')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer whitespace-nowrap border-t-2 ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                   activeTab === 'schemes'
-                    ? 'bg-white text-amber-900 border-amber-600 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 border-transparent hover:bg-stone-200/60'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
+                title="फॉर्म्स, जॉब्स, छात्रवृत्ति व कार्यशाला प्रबंधन"
               >
-                <Briefcase className="w-4 h-4 text-amber-700" />
-                <span>फॉर्म्स व रिक्तियां ({editJobsList.length + editSchList.length + editWsList.length})</span>
+                <Briefcase className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'schemes' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>फॉर्म्स व रिक्तियां</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  activeTab === 'schemes' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
+                }`}>
+                  {editJobsList.length + editSchList.length + editWsList.length}
+                </span>
               </button>
 
+              {/* Tab 8: Events (समाज आयोजन) */}
               <button
+                type="button"
                 onClick={() => setActiveTab('events')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer whitespace-nowrap border-t-2 ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                   activeTab === 'events'
-                    ? 'bg-white text-amber-900 border-amber-600 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 border-transparent hover:bg-stone-200/60'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
+                title="समाज आयोजन, सम्मेलन व महोत्सव प्रबंधन"
               >
-                <Calendar className="w-4 h-4 text-amber-700" />
-                <span>समाज आयोजन ({editEventsList.length})</span>
+                <Calendar className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'events' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>समाज आयोजन</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  activeTab === 'events' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
+                }`}>
+                  {editEventsList.length}
+                </span>
               </button>
 
+              {/* Tab 9: Security & PIN (पिन व Firebase सेटिंग्स) */}
               <button
+                type="button"
                 onClick={() => setActiveTab('security')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer whitespace-nowrap border-t-2 ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                   activeTab === 'security'
-                    ? 'bg-white text-amber-900 border-amber-600 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 border-transparent hover:bg-stone-200/60'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
+                title="एडमिन पिन व Firebase सुरक्षा सेटिंग्स"
               >
-                <Lock className="w-4 h-4 text-amber-700" />
+                <Lock className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'security' ? 'text-amber-300' : 'text-amber-700'}`} />
                 <span>पिन व Firebase सेटिंग्स</span>
               </button>
             </div>
@@ -1923,13 +1942,371 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       />
                     </div>
 
+                    {/* Social Media Links in Office Section */}
+                    <div className="pt-4 border-t border-stone-200/80 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-stone-900 flex items-center gap-1.5 text-xs">
+                          <Share2 className="w-4 h-4 text-amber-700" />
+                          <span>आधिकारिक सोशल मीडिया व डिजिटल संवाद नेटवर्क लिंक्स</span>
+                        </span>
+                        <span className="text-[10px] text-stone-500 font-medium">फुटर व होमपेज पर तुरंत अपडेट</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div className="space-y-1">
+                          <label className="font-bold text-stone-700 flex items-center gap-1 text-[11px]">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                            <span>WhatsApp कम्युनिटी / चैट लिंक</span>
+                          </label>
+                          <input
+                            type="url"
+                            value={editContact.whatsapp || ''}
+                            onChange={(e) => setEditContact({ ...editContact, whatsapp: e.target.value })}
+                            placeholder="https://wa.me/919829099881"
+                            className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono text-xs focus:bg-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-stone-700 flex items-center gap-1 text-[11px]">
+                            <span className="w-2 h-2 rounded-full bg-red-600 inline-block" />
+                            <span>YouTube चैनल URL</span>
+                          </label>
+                          <input
+                            type="url"
+                            value={editContact.youtube || ''}
+                            onChange={(e) => setEditContact({ ...editContact, youtube: e.target.value })}
+                            placeholder="https://youtube.com/@vishwakarmasamaj"
+                            className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono text-xs focus:bg-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-stone-700 flex items-center gap-1 text-[11px]">
+                            <span className="w-2 h-2 rounded-full bg-blue-600 inline-block" />
+                            <span>Facebook पेज URL</span>
+                          </label>
+                          <input
+                            type="url"
+                            value={editContact.facebook || ''}
+                            onChange={(e) => setEditContact({ ...editContact, facebook: e.target.value })}
+                            placeholder="https://facebook.com/vishwakarmasamajconnect"
+                            className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono text-xs focus:bg-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-stone-700 flex items-center gap-1 text-[11px]">
+                            <span className="w-2 h-2 rounded-full bg-pink-600 inline-block" />
+                            <span>Instagram प्रोफ़ाइल URL</span>
+                          </label>
+                          <input
+                            type="url"
+                            value={editContact.instagram || ''}
+                            onChange={(e) => setEditContact({ ...editContact, instagram: e.target.value })}
+                            placeholder="https://instagram.com/vishwakarmasamaj"
+                            className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono text-xs focus:bg-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-stone-700 flex items-center gap-1 text-[11px]">
+                            <span className="w-2 h-2 rounded-full bg-stone-800 inline-block" />
+                            <span>X (Twitter) URL</span>
+                          </label>
+                          <input
+                            type="url"
+                            value={editContact.twitter || ''}
+                            onChange={(e) => setEditContact({ ...editContact, twitter: e.target.value })}
+                            placeholder="https://x.com/vishwakarmaorg"
+                            className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono text-xs focus:bg-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-stone-700 flex items-center gap-1 text-[11px]">
+                            <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" />
+                            <span>Telegram चैनल / ग्रुप URL</span>
+                          </label>
+                          <input
+                            type="url"
+                            value={editContact.telegram || ''}
+                            onChange={(e) => setEditContact({ ...editContact, telegram: e.target.value })}
+                            placeholder="https://t.me/vishwakarmasamaj"
+                            className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono text-xs focus:bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="pt-4 border-t border-stone-100 flex justify-end">
                       <button
                         type="submit"
                         className="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all flex items-center gap-2"
                       >
                         <Save className="w-4 h-4 text-amber-200" />
-                        <span>सचिवालय संपर्क विवरण सुरक्षित करें</span>
+                        <span>सचिवालय व सोशल मीडिया विवरण सुरक्षित करें</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* ======================================================== */}
+              {/* TAB: SOCIAL MEDIA MANAGEMENT (सोशल मीडिया लिंक्स संपादन) */}
+              {/* ======================================================== */}
+              {activeTab === 'social' && (
+                <div className="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-stone-900 font-display flex items-center gap-2">
+                        <Share2 className="w-5 h-5 text-amber-700" />
+                        <span>आधिकारिक सोशल मीडिया व डिजिटल संवाद नेटवर्क संपादन</span>
+                      </h4>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        यहाँ से समाज के सभी आधिकारिक सोशल मीडिया हैंडल्स के लिंक्स अपडेट करें। यह फुटर और मुख्य पृष्ठ पर स्वतः लागू होंगे।
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditContact((prev) => ({
+                          ...prev,
+                          youtube: 'https://youtube.com/@vishwakarmasamaj',
+                          whatsapp: 'https://wa.me/919829099881',
+                          facebook: 'https://facebook.com/vishwakarmasamajconnect',
+                          instagram: 'https://instagram.com/vishwakarmasamaj',
+                          twitter: 'https://x.com/vishwakarmaorg',
+                          telegram: 'https://t.me/vishwakarmasamaj',
+                        }));
+                        showToast('डिफ़ॉल्ट आधिकारिक लिंक भरे गए! सुरक्षित करना न भूलें।');
+                      }}
+                      className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>डिफ़ॉल्ट लिंक भरें</span>
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveContacts} className="space-y-5 text-xs">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* 1. WhatsApp */}
+                      <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-2.5 hover:border-emerald-400 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                              <MessageCircle className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-stone-900 text-sm">WhatsApp कम्युनिटी / हेल्प चैट</div>
+                              <div className="text-[10px] text-stone-500">ग्रुप व आपातकालीन संवाद</div>
+                            </div>
+                          </div>
+                          {editContact.whatsapp && (
+                            <a
+                              href={editContact.whatsapp}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors flex items-center gap-1"
+                            >
+                              <span>टेस्ट</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                        <input
+                          type="url"
+                          required
+                          value={editContact.whatsapp || ''}
+                          onChange={(e) => setEditContact({ ...editContact, whatsapp: e.target.value })}
+                          placeholder="https://wa.me/919829099881 अथवा https://chat.whatsapp.com/..."
+                          className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl font-mono text-xs focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+
+                      {/* 2. YouTube */}
+                      <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-2.5 hover:border-red-400 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-red-100 text-red-800 flex items-center justify-center font-bold">
+                              <Youtube className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-stone-900 text-sm">YouTube आधिकारिक चैनल</div>
+                              <div className="text-[10px] text-stone-500">लाइव महोत्सव, शिल्प वृत्तचित्र</div>
+                            </div>
+                          </div>
+                          {editContact.youtube && (
+                            <a
+                              href={editContact.youtube}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 text-[10px] font-bold text-red-800 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1"
+                            >
+                              <span>टेस्ट</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                        <input
+                          type="url"
+                          required
+                          value={editContact.youtube || ''}
+                          onChange={(e) => setEditContact({ ...editContact, youtube: e.target.value })}
+                          placeholder="https://youtube.com/@vishwakarmasamaj"
+                          className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl font-mono text-xs focus:outline-none focus:border-red-600"
+                        />
+                      </div>
+
+                      {/* 3. Facebook */}
+                      <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-2.5 hover:border-blue-400 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold">
+                              <Facebook className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-stone-900 text-sm">Facebook आधिकारिक पेज</div>
+                              <div className="text-[10px] text-stone-500">सामाजिक समाचार व राष्ट्रीय पोस्ट्स</div>
+                            </div>
+                          </div>
+                          {editContact.facebook && (
+                            <a
+                              href={editContact.facebook}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 text-[10px] font-bold text-blue-800 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
+                            >
+                              <span>टेस्ट</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                        <input
+                          type="url"
+                          required
+                          value={editContact.facebook || ''}
+                          onChange={(e) => setEditContact({ ...editContact, facebook: e.target.value })}
+                          placeholder="https://facebook.com/vishwakarmasamajconnect"
+                          className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl font-mono text-xs focus:outline-none focus:border-blue-600"
+                        />
+                      </div>
+
+                      {/* 4. Instagram */}
+                      <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-2.5 hover:border-pink-400 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-pink-100 text-pink-800 flex items-center justify-center font-bold">
+                              <Instagram className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-stone-900 text-sm">Instagram कला मंच</div>
+                              <div className="text-[10px] text-stone-500">शिल्पकला गैलरी, रील्स व युवा मंच</div>
+                            </div>
+                          </div>
+                          {editContact.instagram && (
+                            <a
+                              href={editContact.instagram}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 text-[10px] font-bold text-pink-800 bg-pink-50 border border-pink-200 rounded-lg hover:bg-pink-100 transition-colors flex items-center gap-1"
+                            >
+                              <span>टेस्ट</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                        <input
+                          type="url"
+                          required
+                          value={editContact.instagram || ''}
+                          onChange={(e) => setEditContact({ ...editContact, instagram: e.target.value })}
+                          placeholder="https://instagram.com/vishwakarmasamaj"
+                          className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl font-mono text-xs focus:outline-none focus:border-pink-600"
+                        />
+                      </div>
+
+                      {/* 5. X / Twitter */}
+                      <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-2.5 hover:border-stone-400 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-stone-200 text-stone-900 flex items-center justify-center font-bold">
+                              <Twitter className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-stone-900 text-sm">X (पूर्व Twitter) मंच</div>
+                              <div className="text-[10px] text-stone-500">राष्ट्रीय विमर्श, नीतियां व घोषणाएं</div>
+                            </div>
+                          </div>
+                          {editContact.twitter && (
+                            <a
+                              href={editContact.twitter}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 text-[10px] font-bold text-stone-800 bg-stone-200 border border-stone-300 rounded-lg hover:bg-stone-300 transition-colors flex items-center gap-1"
+                            >
+                              <span>टेस्ट</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                        <input
+                          type="url"
+                          required
+                          value={editContact.twitter || ''}
+                          onChange={(e) => setEditContact({ ...editContact, twitter: e.target.value })}
+                          placeholder="https://x.com/vishwakarmaorg"
+                          className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl font-mono text-xs focus:outline-none focus:border-stone-600"
+                        />
+                      </div>
+
+                      {/* 6. Telegram */}
+                      <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-2.5 hover:border-sky-400 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-bold">
+                              <Send className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-stone-900 text-sm">Telegram सूचना मंच</div>
+                              <div className="text-[10px] text-stone-500">आधिकारिक सर्कुलर व तुरंत प्रेस विज्ञप्ति</div>
+                            </div>
+                          </div>
+                          {editContact.telegram && (
+                            <a
+                              href={editContact.telegram}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 text-[10px] font-bold text-sky-800 bg-sky-50 border border-sky-200 rounded-lg hover:bg-sky-100 transition-colors flex items-center gap-1"
+                            >
+                              <span>टेस्ट</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                        <input
+                          type="url"
+                          required
+                          value={editContact.telegram || ''}
+                          onChange={(e) => setEditContact({ ...editContact, telegram: e.target.value })}
+                          placeholder="https://t.me/vishwakarmasamaj"
+                          className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl font-mono text-xs focus:outline-none focus:border-sky-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
+                      <div className="text-[11px] text-stone-500 font-medium">
+                        सुरक्षित करने पर यह लिंक्स लाइव वेबसाइट पर तुरंत सक्रिय हो जाएंगे।
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all flex items-center gap-2"
+                      >
+                        <Save className="w-4 h-4 text-amber-200" />
+                        <span>सभी सोशल मीडिया लिंक्स सुरक्षित करें</span>
                       </button>
                     </div>
                   </form>
@@ -2366,10 +2743,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               {activeTab === 'schemes' && (
                 <div className="space-y-5">
                   {/* All Forms Master Sub-navigation */}
-                  <div className="flex items-center gap-2 border-b border-stone-200 pb-3 overflow-x-auto scrollbar-none">
+                  <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 pb-3">
                     <button
                       onClick={() => setSchemesSubTab('jobs')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         schemesSubTab === 'jobs'
                           ? 'bg-amber-800 text-white shadow-2xs'
                           : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200'
@@ -2381,7 +2758,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                     <button
                       onClick={() => setSchemesSubTab('scholarships')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         schemesSubTab === 'scholarships'
                           ? 'bg-amber-800 text-white shadow-2xs'
                           : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200'
@@ -2393,7 +2770,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                     <button
                       onClick={() => setSchemesSubTab('workshops')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         schemesSubTab === 'workshops'
                           ? 'bg-amber-800 text-white shadow-2xs'
                           : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200'
@@ -2405,7 +2782,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                     <button
                       onClick={() => setSchemesSubTab('idcard')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         schemesSubTab === 'idcard'
                           ? 'bg-amber-800 text-white shadow-2xs'
                           : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200'
@@ -2417,7 +2794,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                     <button
                       onClick={() => setSchemesSubTab('matrimony')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         schemesSubTab === 'matrimony'
                           ? 'bg-amber-800 text-white shadow-2xs'
                           : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200'
@@ -2429,7 +2806,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                     <button
                       onClick={() => setSchemesSubTab('artisan')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         schemesSubTab === 'artisan'
                           ? 'bg-amber-800 text-white shadow-2xs'
                           : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200'
@@ -2441,7 +2818,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                     <button
                       onClick={() => setSchemesSubTab('post')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         schemesSubTab === 'post'
                           ? 'bg-amber-800 text-white shadow-2xs'
                           : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200'

@@ -59,7 +59,7 @@ export default function App() {
   const [isCreatePostOpen, setIsCreatePostOpen] = useState<boolean>(false);
   const [isDonateOpen, setIsDonateOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
-  const [adminInitialTab, setAdminInitialTab] = useState<'applications' | 'president' | 'team' | 'office' | 'donation' | 'schemes' | 'events' | 'security'>('applications');
+  const [adminInitialTab, setAdminInitialTab] = useState<'applications' | 'president' | 'team' | 'office' | 'social' | 'donation' | 'schemes' | 'events' | 'security'>('applications');
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     try {
       return localStorage.getItem('vsm_admin_logged_in') === 'true';
@@ -120,6 +120,12 @@ export default function App() {
             emergencyPhone: '+91 98290 99881',
             regNumber: 'DL/SOC/2018/8842',
             bankUpi: 'vishwakarmatrust@sbi',
+            youtube: 'https://youtube.com/@vishwakarmasamaj',
+            facebook: 'https://facebook.com/vishwakarmasamajconnect',
+            whatsapp: 'https://wa.me/919829099881',
+            instagram: 'https://instagram.com/vishwakarmasamaj',
+            twitter: 'https://x.com/vishwakarmaorg',
+            telegram: 'https://t.me/vishwakarmasamaj',
           };
     } catch {
       return {
@@ -129,6 +135,12 @@ export default function App() {
         emergencyPhone: '+91 98290 99881',
         regNumber: 'DL/SOC/2018/8842',
         bankUpi: 'vishwakarmatrust@sbi',
+        youtube: 'https://youtube.com/@vishwakarmasamaj',
+        facebook: 'https://facebook.com/vishwakarmasamajconnect',
+        whatsapp: 'https://wa.me/919829099881',
+        instagram: 'https://instagram.com/vishwakarmasamaj',
+        twitter: 'https://x.com/vishwakarmaorg',
+        telegram: 'https://t.me/vishwakarmasamaj',
       };
     }
   });
@@ -327,6 +339,7 @@ export default function App() {
             lang={lang}
             founderData={founderData}
             teamMembers={teamMembers}
+            orgContact={orgContact}
           />
         )}
 
@@ -461,13 +474,11 @@ export default function App() {
         onLogout={handleAdminLogout}
       />
 
-      {/* Footer */}
+      {/* Footer (No Admin Login button at bottom, only in Top Menubar as requested) */}
       <Footer
         setActiveTab={setActiveTab}
         lang={lang}
         orgContact={orgContact}
-        onOpenAdmin={() => setIsAdminOpen(true)}
-        isAdminLoggedIn={isAdminLoggedIn}
       />
     </div>
   );

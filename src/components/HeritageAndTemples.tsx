@@ -206,14 +206,14 @@ export const HeritageAndTemples: React.FC<HeritageAndTemplesProps> = ({ lang }) 
               <span>{isHi ? 'वापस मुख्य सूची पर जाएं (अनलिंक करें)' : 'Unlink & Return to Overview'}</span>
             </button>
 
-            {/* Quick selector of other stories */}
-            <div className="flex items-center gap-2 text-xs text-stone-500 overflow-x-auto scrollbar-none">
-              <span className="hidden sm:inline font-medium">{isHi ? 'अन्य कथाएं:' : 'Other Stories:'}</span>
+            {/* Quick selector of other stories (Responsive with shrink-0) */}
+            <div className="flex items-center gap-2 text-xs text-stone-500 overflow-x-auto scrollbar-none px-0.5">
+              <span className="hidden sm:inline font-medium shrink-0">{isHi ? 'अन्य कथाएं:' : 'Other Stories:'}</span>
               {MYTHOLOGICAL_CREATIONS.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => setSelectedCreationId(c.id)}
-                  className={`px-2.5 py-1 rounded text-xs whitespace-nowrap cursor-pointer transition-colors ${
+                  className={`px-2.5 py-1 rounded text-xs whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
                     c.id === selectedCreationId
                       ? 'bg-amber-900 text-white font-bold'
                       : 'bg-stone-100 hover:bg-stone-200 text-stone-700'

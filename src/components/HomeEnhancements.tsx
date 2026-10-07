@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Language, NavTab, Post } from '../types';
+import { Language, NavTab, Post, OrgContactInfo } from '../types';
 import {
   FOUNDER_DATA,
   MISSION_VISION_DATA,
@@ -53,6 +53,7 @@ interface HomeEnhancementsProps {
   onOpenCreatePost?: () => void;
   founderData?: FounderInfo;
   teamMembers?: TeamMember[];
+  orgContact?: OrgContactInfo;
 }
 
 export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
@@ -64,12 +65,25 @@ export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
   onOpenCreatePost,
   founderData,
   teamMembers,
+  orgContact,
 }) => {
   const isHi = lang === 'hi';
   const currentFounder = founderData || FOUNDER_DATA;
   const currentTeam = teamMembers || TEAM_MEMBERS;
   const [selectedBlog, setSelectedBlog] = useState<CommunityBlog | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
+
+  // Dynamic social links mapped from live editable orgContact
+  const activeSocialLinks = SOCIAL_MEDIA_LINKS.map((item) => {
+    let customUrl = item.url;
+    if (item.id === 'soc-yt' && orgContact?.youtube) customUrl = orgContact.youtube;
+    if (item.id === 'soc-wa' && orgContact?.whatsapp) customUrl = orgContact.whatsapp;
+    if (item.id === 'soc-fb' && orgContact?.facebook) customUrl = orgContact.facebook;
+    if (item.id === 'soc-x' && orgContact?.twitter) customUrl = orgContact.twitter;
+    if (item.id === 'soc-ig' && orgContact?.instagram) customUrl = orgContact.instagram;
+    if (item.id === 'soc-tg' && orgContact?.telegram) customUrl = orgContact.telegram;
+    return { ...item, url: customUrl };
+  });
 
   // Helper for dynamic social icon
   const renderSocialIcon = (iconName: string) => {
@@ -668,7 +682,7 @@ export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {SOCIAL_MEDIA_LINKS.map((soc) => (
+          {activeSocialLinks.map((soc) => (
             <a
               key={soc.id}
               href={soc.url}

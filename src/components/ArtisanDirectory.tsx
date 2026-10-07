@@ -257,11 +257,11 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
           </div>
         </div>
 
-        {/* Trade Segmented Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {/* Trade Segmented Filters (Responsive with shrink-0) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none px-0.5">
           <button
             onClick={() => setSelectedTrade('all')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               selectedTrade === 'all'
                 ? 'bg-amber-900 text-white shadow-xs'
                 : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -271,7 +271,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
           </button>
           <button
             onClick={() => setSelectedTrade('wood')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               selectedTrade === 'wood'
                 ? 'bg-amber-900 text-white shadow-xs'
                 : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -281,7 +281,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
           </button>
           <button
             onClick={() => setSelectedTrade('metal')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               selectedTrade === 'metal'
                 ? 'bg-amber-900 text-white shadow-xs'
                 : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -291,7 +291,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
           </button>
           <button
             onClick={() => setSelectedTrade('jewelry')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               selectedTrade === 'jewelry'
                 ? 'bg-amber-900 text-white shadow-xs'
                 : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -301,7 +301,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
           </button>
           <button
             onClick={() => setSelectedTrade('architecture')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               selectedTrade === 'architecture'
                 ? 'bg-amber-900 text-white shadow-xs'
                 : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -311,7 +311,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
           </button>
           <button
             onClick={() => setSelectedTrade('stone')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               selectedTrade === 'stone'
                 ? 'bg-amber-900 text-white shadow-xs'
                 : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -321,7 +321,7 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
           </button>
           <button
             onClick={() => setSelectedTrade('engineering')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
               selectedTrade === 'engineering'
                 ? 'bg-amber-900 text-white shadow-xs'
                 : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'

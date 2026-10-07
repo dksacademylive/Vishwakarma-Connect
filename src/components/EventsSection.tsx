@@ -290,13 +290,13 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
           </div>
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {/* Category Pills (Responsive with shrink-0) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none px-0.5">
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
                 selectedCategory === cat.id
                   ? 'bg-amber-800 text-white shadow-xs'
                   : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
@@ -319,9 +319,12 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             <div>
               <div className="h-52 sm:h-60 overflow-hidden relative bg-stone-900">
                 <img
-                  src={event.bannerImage || '/src/assets/images/community_event_1790956405903.jpg'}
+                  src={event.bannerImage || '/images/community_event_1790956405903.jpg'}
                   alt={event.title}
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/images/community_event_1790956405903.jpg';
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-95"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent" />

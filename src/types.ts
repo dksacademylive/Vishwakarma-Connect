@@ -179,6 +179,12 @@ export interface OrgContactInfo {
   emergencyPhone: string;
   regNumber: string;
   bankUpi: string;
+  youtube?: string;
+  facebook?: string;
+  instagram?: string;
+  whatsapp?: string;
+  twitter?: string;
+  telegram?: string;
 }
 
 export interface JobItem {

@@ -218,13 +218,13 @@ export const LuminariesSection: React.FC<LuminariesSectionProps> = ({
           </div>
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {/* Category Pills (Responsive with shrink-0) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none px-0.5">
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
                 selectedCategory === cat.id
                   ? 'bg-amber-800 text-white shadow-xs'
                   : 'bg-stone-100 hover:bg-stone-200 text-stone-700'

@@ -125,11 +125,11 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
             </div>
           </div>
 
-          {/* Interactive Category Filter Tabs (Single-line, functional controls) */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {/* Interactive Category Filter Tabs (Single-line, functional controls with shrink-0) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none px-0.5">
             <button
               onClick={() => setActiveCategory('all')}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 activeCategory === 'all'
                   ? 'bg-amber-900 text-white shadow-xs'
                   : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -139,7 +139,7 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
             </button>
             <button
               onClick={() => setActiveCategory('shilp')}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 activeCategory === 'shilp'
                   ? 'bg-amber-900 text-white shadow-xs'
                   : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -149,7 +149,7 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
             </button>
             <button
               onClick={() => setActiveCategory('utsav')}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 activeCategory === 'utsav'
                   ? 'bg-amber-900 text-white shadow-xs'
                   : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -159,7 +159,7 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
             </button>
             <button
               onClick={() => setActiveCategory('youth')}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 activeCategory === 'youth'
                   ? 'bg-amber-900 text-white shadow-xs'
                   : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'
@@ -169,7 +169,7 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
             </button>
             <button
               onClick={() => setActiveCategory('social')}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 activeCategory === 'social'
                   ? 'bg-amber-900 text-white shadow-xs'
                   : 'bg-white text-stone-600 hover:text-stone-900 border border-stone-200'

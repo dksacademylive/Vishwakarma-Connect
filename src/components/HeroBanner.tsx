@@ -15,9 +15,12 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ setActiveTab, lang }) =>
       {/* Background Image with Enhanced Dark Rich Overlay (Deepened as requested) */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img
-          src="/src/assets/images/lord_vishwakarma_radiant_1791050449348.jpg"
+          src="/images/lord_vishwakarma_radiant_1791050449348.jpg"
           alt="Lord Vishwakarma Cosmic Architect"
           referrerPolicy="no-referrer"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/images/hero_vishwakarma_1790956373008.jpg';
+          }}
           className="w-full h-full object-cover object-center opacity-15 filter brightness-75 contrast-110 saturate-90"
         />
         {/* Darkening Scrims - Rich Dark Elegant Overlay */}
@@ -145,8 +148,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ setActiveTab, lang }) =>
                 {/* Image Container with high brightness and radiant golden border */}
                 <div className="relative h-72 sm:h-84 lg:h-92 w-full rounded-2xl overflow-hidden border border-amber-300/80 bg-stone-900 shadow-inner">
                   <img
-                    src="/src/assets/images/lord_vishwakarma_radiant_1791050449348.jpg"
+                    src="/images/lord_vishwakarma_radiant_1791050449348.jpg"
                     alt="भगवान श्री विश्वकर्मा - देवाधिदेव एवं ब्रह्मांड के आदि शिल्पी"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/images/hero_vishwakarma_1790956373008.jpg';
+                    }}
                     className="w-full h-full object-cover object-center filter brightness-110 contrast-105 saturate-110 transform group-hover:scale-105 transition-transform duration-700"
                   />
                   {/* Subtle inner corner gold shine */}

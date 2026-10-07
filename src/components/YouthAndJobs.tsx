@@ -476,14 +476,14 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
         )}
       </div>
 
-      {/* Segmented Controls for Sub-views */}
-      <div className="flex items-center gap-2 border-b border-stone-200 pb-3 overflow-x-auto scrollbar-none">
+      {/* Segmented Controls for Sub-views (Mobile, Laptop & PC responsive) */}
+      <div className="flex items-center gap-2 border-b border-stone-200 pb-3 overflow-x-auto scrollbar-none px-0.5">
         <button
           onClick={() => setActiveTab('jobs')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === 'jobs'
               ? 'bg-amber-900 text-white shadow-xs'
-              : 'text-stone-600 hover:text-stone-900 bg-stone-100'
+              : 'text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200'
           }`}
         >
           <Briefcase className="w-4 h-4" />
@@ -492,10 +492,10 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
         <button
           onClick={() => setActiveTab('scholarships')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === 'scholarships'
               ? 'bg-amber-900 text-white shadow-xs'
-              : 'text-stone-600 hover:text-stone-900 bg-stone-100'
+              : 'text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200'
           }`}
         >
           <GraduationCap className="w-4 h-4" />
@@ -504,10 +504,10 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
         <button
           onClick={() => setActiveTab('skills')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === 'skills'
               ? 'bg-amber-900 text-white shadow-xs'
-              : 'text-stone-600 hover:text-stone-900 bg-stone-100'
+              : 'text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200'
           }`}
         >
           <Compass className="w-4 h-4" />
