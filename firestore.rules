@@ -40,5 +40,23 @@ service cloud.firestore {
                     request.resource.data.subcaste is string;
       allow update, delete: if true;
     }
+
+    // Site Configuration (Live sync across all devices & public links)
+    match /site_config/{configDocId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Community Events
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Amar Shilpi / Luminaries
+    match /luminaries/{luminaryId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

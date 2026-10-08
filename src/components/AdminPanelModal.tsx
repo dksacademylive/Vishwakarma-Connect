@@ -44,7 +44,15 @@ import {
   Facebook,
   Twitter,
   Instagram,
-  Send
+  Send,
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  UserPlus,
+  UserX,
+  ShieldAlert,
+  Key,
+  Smartphone
 } from 'lucide-react';
 import {
   StoredApplication,
@@ -52,9 +60,13 @@ import {
   updateApplicationStatusInFirestore,
   deleteApplicationFromFirestore,
   fetchMatrimonialProfilesFromFirestore,
-  StoredMatrimonialProfile
+  deleteMatrimonialProfileFromFirestore,
+  updateMatrimonialProfileVisibilityInFirestore,
+  StoredMatrimonialProfile,
+  saveSiteConfigToFirestore
 } from '../firebase';
-import { FounderInfo, TeamMember } from '../data/homeData';
+import { FounderInfo, TeamMember, HallOfFamePerson, HALL_OF_FAME_DATA } from '../data/homeData';
+import { MATRIMONIAL_PROFILES } from '../data/mockData';
 import {
   SamajEvent,
   OrgContactInfo,
@@ -67,7 +79,8 @@ import {
   ArtisanFormConfig,
   PostFormConfig,
   DonationPurposeItem,
-  Language
+  Language,
+  MatrimonialProfile
 } from '../types';
 import {
   DEFAULT_DONATION_CONFIG,
@@ -76,6 +89,60 @@ import {
   DEFAULT_ARTISAN_CONFIG,
   DEFAULT_POST_CONFIG
 } from '../data/formsData';
+
+export interface SubAdmin {
+  id: string;
+  name: string;
+  role: string;
+  roleKey: 'matrimony' | 'events' | 'youth' | 'donation' | 'general';
+  pin: string;
+  phone: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export const DEFAULT_SUB_ADMINS: SubAdmin[] = [
+  {
+    id: 'admin-matrimony-1',
+    name: 'श्री सुरेश विश्वकर्मा',
+    role: 'वैवाहिक प्रभारी (Matrimony Head)',
+    roleKey: 'matrimony',
+    pin: '7788',
+    phone: '+91 98290 12345',
+    isActive: true,
+    createdAt: '2026-01-15'
+  },
+  {
+    id: 'admin-events-1',
+    name: 'श्री दिनेश विश्वकर्मा',
+    role: 'आयोजन व आवेदन प्रभारी (Events & PR)',
+    roleKey: 'events',
+    pin: '5566',
+    phone: '+91 98291 23456',
+    isActive: true,
+    createdAt: '2026-02-01'
+  },
+  {
+    id: 'admin-youth-1',
+    name: 'श्री महेश पांचाल',
+    role: 'शिक्षा व रोजगार प्रभारी (Education & Jobs)',
+    roleKey: 'youth',
+    pin: '3344',
+    phone: '+91 98292 34567',
+    isActive: true,
+    createdAt: '2026-02-10'
+  },
+  {
+    id: 'admin-finance-1',
+    name: 'श्री रमेश जांगिड़',
+    role: 'कोषाध्यक्ष / दान प्रभारी (Treasurer & Accounts)',
+    roleKey: 'donation',
+    pin: '9900',
+    phone: '+91 98293 45678',
+    isActive: true,
+    createdAt: '2026-01-01'
+  }
+];
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -105,6 +172,8 @@ interface AdminPanelModalProps {
   onUpdateArtisanConfig?: (cfg: ArtisanFormConfig) => void;
   postConfig?: PostFormConfig;
   onUpdatePostConfig?: (cfg: PostFormConfig) => void;
+  luminaries?: HallOfFamePerson[];
+  onUpdateLuminaries?: (list: HallOfFamePerson[]) => void;
   lang?: Language;
   isAuthenticated?: boolean;
   onLoginSuccess?: () => void;
@@ -112,7 +181,19 @@ interface AdminPanelModalProps {
   initialTab?: AdminTab;
 }
 
-type AdminTab = 'applications' | 'president' | 'team' | 'office' | 'social' | 'donation' | 'schemes' | 'events' | 'security';
+export type AdminTab =
+  | 'applications'
+  | 'matrimony'
+  | 'multiadmin'
+  | 'luminaries'
+  | 'president'
+  | 'team'
+  | 'office'
+  | 'social'
+  | 'donation'
+  | 'schemes'
+  | 'events'
+  | 'security';
 
 export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   isOpen,
@@ -142,6 +223,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onUpdateArtisanConfig,
   postConfig,
   onUpdatePostConfig,
+  luminaries,
+  onUpdateLuminaries,
   lang,
   isAuthenticated: isAuthenticatedProp,
   onLoginSuccess,
@@ -216,6 +299,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   // 5. Events State
   const [editEventsList, setEditEventsList] = useState<SamajEvent[]>(events);
   const [isAddingEvent, setIsAddingEvent] = useState<boolean>(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [newEventForm, setNewEventForm] = useState<Omit<SamajEvent, 'id'>>({
     title: '',
     date: '',
@@ -284,6 +368,49 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [newPin, setNewPin] = useState<string>('');
   const [confirmPin, setConfirmPin] = useState<string>('');
   const [pinChangeMsg, setPinChangeMsg] = useState<string>('');
+
+  // 7. Multi-Admin & Sub-Admin Roles State
+  const [subAdmins, setSubAdmins] = useState<SubAdmin[]>(() => {
+    try {
+      const saved = localStorage.getItem('vsm_sub_admins');
+      return saved ? JSON.parse(saved) : DEFAULT_SUB_ADMINS;
+    } catch {
+      return DEFAULT_SUB_ADMINS;
+    }
+  });
+
+  const [loggedInAdmin, setLoggedInAdmin] = useState<{
+    role: 'super_admin' | 'matrimony' | 'events' | 'youth' | 'donation' | 'general';
+    name: string;
+    roleTitle: string;
+  }>({
+    role: 'super_admin',
+    name: 'मुख्य व्यवस्थापक (Super Admin)',
+    roleTitle: 'सर्वोच्च प्रशासनिक अधिकार'
+  });
+
+  const [isAddingSubAdmin, setIsAddingSubAdmin] = useState<boolean>(false);
+  const [newSubAdminForm, setNewSubAdminForm] = useState<Omit<SubAdmin, 'id' | 'createdAt'>>({
+    name: '',
+    role: '',
+    roleKey: 'general',
+    pin: '',
+    phone: '',
+    isActive: true
+  });
+
+  // 8. Matrimonial Profiles State for Moderation
+  const [localMatrimonialProfiles, setLocalMatrimonialProfiles] = useState<MatrimonialProfile[]>(() => {
+    try {
+      const saved = localStorage.getItem('vsm_matrimonial_profiles');
+      return saved ? JSON.parse(saved) : MATRIMONIAL_PROFILES;
+    } catch {
+      return MATRIMONIAL_PROFILES;
+    }
+  });
+  const [matrimonyFilter, setMatrimonyFilter] = useState<'all' | 'verified' | 'unverified' | 'whatsapp' | 'firebase_sms'>('all');
+  const [matrimonyGenderFilter, setMatrimonyGenderFilter] = useState<'all' | 'groom' | 'bride'>('all');
+  const [matrimonySearch, setMatrimonySearch] = useState<string>('');
 
   useEffect(() => {
     if (isOpen && isAuthenticated) {
@@ -432,14 +559,41 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // 1. Super Admin Check
     if (pinInput === currentPin || pinInput === '1234' || pinInput === 'admin123') {
       setIsAuthenticated(true);
+      setLoggedInAdmin({
+        role: 'super_admin',
+        name: 'मुख्य व्यवस्थापक (Super Admin)',
+        roleTitle: 'सर्वोच्च प्रशासनिक अधिकार'
+      });
       setPinError('');
       onLoginSuccess?.();
       loadData();
-    } else {
-      setPinError(`अमान्य एडमिन पिन। कृपया सही पिन दर्ज करें। (डिफ़ॉल्ट पिन: 1234)`);
+      return;
     }
+
+    // 2. Sub-Admin Check
+    const matchedSub = subAdmins.find((sub) => sub.pin === pinInput && sub.isActive);
+    if (matchedSub) {
+      setIsAuthenticated(true);
+      setLoggedInAdmin({
+        role: matchedSub.roleKey,
+        name: matchedSub.name,
+        roleTitle: matchedSub.role
+      });
+      setPinError('');
+      onLoginSuccess?.();
+      loadData();
+
+      if (matchedSub.roleKey === 'matrimony') setActiveTab('matrimony');
+      else if (matchedSub.roleKey === 'events') setActiveTab('events');
+      else if (matchedSub.roleKey === 'youth') setActiveTab('schemes');
+      else if (matchedSub.roleKey === 'donation') setActiveTab('donation');
+      return;
+    }
+
+    setPinError(`अमान्य एडमिन पिन। कृपया सही पिन दर्ज करें। (सुपर एडमिन: 1234, परिणय प्रभारी: 7788, आयोजन: 5566, युवा: 3344)`);
   };
 
   const loadData = async () => {
@@ -447,10 +601,278 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     try {
       const data = await fetchApplicationsFromFirestore();
       setApplications(data);
+      loadFirebaseMatrimony();
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Sub-Admin Management
+  const handleAddSubAdmin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubAdminForm.name.trim() || !newSubAdminForm.pin.trim()) return;
+    const newAdmin: SubAdmin = {
+      id: `admin-${Date.now()}`,
+      ...newSubAdminForm,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    const updated = [newAdmin, ...subAdmins];
+    setSubAdmins(updated);
+    try {
+      localStorage.setItem('vsm_sub_admins', JSON.stringify(updated));
+    } catch (e) {}
+    setIsAddingSubAdmin(false);
+    setNewSubAdminForm({
+      name: '',
+      role: '',
+      roleKey: 'general',
+      pin: '',
+      phone: '',
+      isActive: true
+    });
+    showToast('नया उप-व्यवस्थापक (Sub-Admin) सफलतापूर्वक जोड़ा गया!');
+  };
+
+  const handleDeleteSubAdmin = (id: string) => {
+    if (window.confirm('क्या आप इस व्यवस्थापक खाते को हटाना चाहते हैं?')) {
+      const updated = subAdmins.filter((s) => s.id !== id);
+      setSubAdmins(updated);
+      try {
+        localStorage.setItem('vsm_sub_admins', JSON.stringify(updated));
+      } catch (e) {}
+      showToast('व्यवस्थापक खाता हटाया गया!');
+    }
+  };
+
+  const handleToggleSubAdminStatus = (id: string) => {
+    const updated = subAdmins.map((s) => (s.id === id ? { ...s, isActive: !s.isActive } : s));
+    setSubAdmins(updated);
+    try {
+      localStorage.setItem('vsm_sub_admins', JSON.stringify(updated));
+    } catch (e) {}
+    showToast('व्यवस्थापक स्थिति अपडेट की गई!');
+  };
+
+  // Prabhari / Sub-Admin PIN Change by Super Admin
+  const [editingPrabhariPinId, setEditingPrabhariPinId] = useState<string | null>(null);
+  const [newPrabhariPin, setNewPrabhariPin] = useState<string>('');
+  const [confirmPrabhariPin, setConfirmPrabhariPin] = useState<string>('');
+  const [prabhariPinError, setPrabhariPinError] = useState<string>('');
+
+  const handleStartChangePrabhariPin = (sub: SubAdmin) => {
+    setEditingPrabhariPinId(sub.id);
+    setNewPrabhariPin('');
+    setConfirmPrabhariPin('');
+    setPrabhariPinError('');
+  };
+
+  const handleSavePrabhariPin = (subId: string, e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newPrabhariPin.trim() || newPrabhariPin.trim().length < 4) {
+      setPrabhariPinError('पिन कम से कम 4 अंकों का होना चाहिए।');
+      return;
+    }
+    if (newPrabhariPin.trim() !== confirmPrabhariPin.trim()) {
+      setPrabhariPinError('दोनों पिन मेल नहीं खा रहे हैं। कृपया पुनः जांचें।');
+      return;
+    }
+    const targetSub = subAdmins.find((s) => s.id === subId);
+    const updated = subAdmins.map((sub) => (sub.id === subId ? { ...sub, pin: newPrabhariPin.trim() } : sub));
+    setSubAdmins(updated);
+    try {
+      localStorage.setItem('vsm_sub_admins', JSON.stringify(updated));
+    } catch (e) {
+      console.warn(e);
+    }
+    setEditingPrabhariPinId(null);
+    setNewPrabhariPin('');
+    setConfirmPrabhariPin('');
+    setPrabhariPinError('');
+    showToast(`प्रभारी "${targetSub?.name || ''}" का नया लॉगिन पिन (${newPrabhariPin.trim()}) सफलतापूर्वक सेट हो गया!`);
+  };
+
+  // 9. Luminaries / Amarshilpi State & Handlers
+  const [luminariesList, setLuminariesList] = useState<HallOfFamePerson[]>(() => {
+    if (luminaries && luminaries.length > 0) return luminaries;
+    try {
+      const saved = localStorage.getItem('vsm_luminaries');
+      return saved ? JSON.parse(saved) : HALL_OF_FAME_DATA;
+    } catch {
+      return HALL_OF_FAME_DATA;
+    }
+  });
+
+  useEffect(() => {
+    if (luminaries && luminaries.length > 0) {
+      setLuminariesList(luminaries);
+    }
+  }, [luminaries]);
+
+  const [isAddingLuminary, setIsAddingLuminary] = useState<boolean>(false);
+  const [editingLuminaryId, setEditingLuminaryId] = useState<string | null>(null);
+  const [luminarySearch, setLuminarySearch] = useState<string>('');
+  const [luminaryCategoryFilter, setLuminaryCategoryFilter] = useState<string>('all');
+  const luminaryPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [luminaryForm, setLuminaryForm] = useState({
+    name: '',
+    title: '',
+    category: 'modern' as HallOfFamePerson['category'],
+    era: '',
+    photo: '',
+    famousWorks: '',
+    honors: '',
+    shortBio: '',
+  });
+
+  const handleOpenAddLuminary = () => {
+    setEditingLuminaryId(null);
+    setLuminaryForm({
+      name: '',
+      title: '',
+      category: 'modern',
+      era: '',
+      photo: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
+      famousWorks: '',
+      honors: '',
+      shortBio: '',
+    });
+    setIsAddingLuminary(true);
+  };
+
+  const handleEditLuminary = (person: HallOfFamePerson) => {
+    setEditingLuminaryId(person.id);
+    setLuminaryForm({
+      name: person.name,
+      title: person.title,
+      category: person.category,
+      era: person.era,
+      photo: person.photo,
+      famousWorks: person.famousWorks ? person.famousWorks.join(', ') : '',
+      honors: person.honors ? person.honors.join(', ') : '',
+      shortBio: person.shortBio || '',
+    });
+    setIsAddingLuminary(true);
+  };
+
+  const handleLuminaryPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('फ़ोटो का आकार 5MB से अधिक है। कृपया 5MB से छोटी फ़ाइल चुनें।');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLuminaryForm((prev) => ({ ...prev, photo: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveLuminary = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!luminaryForm.name.trim() || !luminaryForm.title.trim() || !luminaryForm.era.trim()) {
+      alert('कृपया नाम, उपाधि एवं कालखंड भरें।');
+      return;
+    }
+
+    const worksArr = luminaryForm.famousWorks
+      ? luminaryForm.famousWorks.split(',').map((w) => w.trim()).filter(Boolean)
+      : [];
+    const honorsArr = luminaryForm.honors
+      ? luminaryForm.honors.split(',').map((h) => h.trim()).filter(Boolean)
+      : [];
+
+    let updated: HallOfFamePerson[];
+    if (editingLuminaryId) {
+      updated = luminariesList.map((p) => {
+        if (p.id === editingLuminaryId) {
+          return {
+            ...p,
+            name: luminaryForm.name.trim(),
+            title: luminaryForm.title.trim(),
+            category: luminaryForm.category,
+            era: luminaryForm.era.trim(),
+            photo: luminaryForm.photo || p.photo,
+            famousWorks: worksArr.length > 0 ? worksArr : p.famousWorks,
+            honors: honorsArr.length > 0 ? honorsArr : p.honors,
+            shortBio: luminaryForm.shortBio.trim() || p.shortBio,
+          };
+        }
+        return p;
+      });
+      showToast('विभूति विवरण सफलतापूर्वक अपडेट किया गया!');
+    } else {
+      const newPerson: HallOfFamePerson = {
+        id: `hof-${Date.now()}`,
+        name: luminaryForm.name.trim(),
+        title: luminaryForm.title.trim(),
+        category: luminaryForm.category,
+        era: luminaryForm.era.trim(),
+        photo: luminaryForm.photo || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600',
+        famousWorks: worksArr,
+        honors: honorsArr,
+        shortBio: luminaryForm.shortBio.trim(),
+      };
+      updated = [newPerson, ...luminariesList];
+      showToast('नई अमर विभूति सफलतापूर्वक जोड़ी गई!');
+    }
+
+    setLuminariesList(updated);
+    try {
+      localStorage.setItem('vsm_luminaries', JSON.stringify(updated));
+    } catch (err) {
+      console.warn(err);
+    }
+    onUpdateLuminaries?.(updated);
+    setIsAddingLuminary(false);
+    setEditingLuminaryId(null);
+  };
+
+  const handleDeleteLuminary = (id: string) => {
+    if (window.confirm('क्या आप इस अमर विभूति को सूची से हटाना चाहते हैं?')) {
+      const updated = luminariesList.filter((p) => p.id !== id);
+      setLuminariesList(updated);
+      try {
+        localStorage.setItem('vsm_luminaries', JSON.stringify(updated));
+      } catch (err) {
+        console.warn(err);
+      }
+      onUpdateLuminaries?.(updated);
+      showToast('विभूति सूची से हटाई गई!');
+    }
+  };
+
+  // Matrimonial Moderation Actions
+  const handleToggleMatrimonyVisibility = async (id: string, currentVisibility?: string) => {
+    const newVisibility: 'active' | 'hidden' = currentVisibility === 'hidden' ? 'active' : 'hidden';
+    await updateMatrimonialProfileVisibilityInFirestore(id, newVisibility);
+    setFirebaseMatrimonyProfiles((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, profileVisibility: newVisibility } : p))
+    );
+    setLocalMatrimonialProfiles((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, profileVisibility: newVisibility } : p));
+      try {
+        localStorage.setItem('vsm_matrimonial_profiles', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast(newVisibility === 'active' ? 'बायोडाटा दृश्यमान (Active) किया गया!' : 'बायोडाटा गोपनीय/छिपाया (Hidden) गया!');
+  };
+
+  const handleDeleteMatrimonyProfile = async (id: string) => {
+    if (window.confirm('क्या आप निश्चित रूप से इस वैवाहिक बायोडाटा को हटाना चाहते हैं?')) {
+      await deleteMatrimonialProfileFromFirestore(id);
+      setFirebaseMatrimonyProfiles((prev) => prev.filter((p) => p.id !== id));
+      setLocalMatrimonialProfiles((prev) => {
+        const updated = prev.filter((p) => p.id !== id);
+        try {
+          localStorage.setItem('vsm_matrimonial_profiles', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+      showToast('वैवाहिक बायोडाटा सफलतापूर्वक हटाया गया!');
     }
   };
 
@@ -514,7 +936,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const handleSaveFounder = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateFounderData(editFounder);
-    localStorage.setItem('vsm_founder', JSON.stringify(editFounder));
+    try {
+      localStorage.setItem('vsm_founder', JSON.stringify(editFounder));
+      saveSiteConfigToFirestore('founder', editFounder);
+    } catch (e) {
+      console.warn(e);
+    }
     showToast('अध्यक्ष व संस्थापक का विवरण और फोटो सफलतापूर्वक अपडेट हुए!');
   };
 
@@ -525,7 +952,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const updated = editTeamList.map((m) => (m.id === selectedMember.id ? selectedMember : m));
     setEditTeamList(updated);
     onUpdateTeamMembers(updated);
-    localStorage.setItem('vsm_team', JSON.stringify(updated));
+    try {
+      localStorage.setItem('vsm_team', JSON.stringify(updated));
+      saveSiteConfigToFirestore('team', updated);
+    } catch (e) {
+      console.warn(e);
+    }
     setSelectedMember(null);
     showToast('पदाधिकारी का विवरण व फोटो सफलतापूर्वक सुरक्षित हुआ!');
   };
@@ -539,7 +971,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const updated = [newEntry, ...editTeamList];
     setEditTeamList(updated);
     onUpdateTeamMembers(updated);
-    localStorage.setItem('vsm_team', JSON.stringify(updated));
+    try {
+      localStorage.setItem('vsm_team', JSON.stringify(updated));
+      saveSiteConfigToFirestore('team', updated);
+    } catch (e) {
+      console.warn(e);
+    }
     setIsAddingMember(false);
     setNewMemberForm({
       name: '',
@@ -560,7 +997,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       const updated = editTeamList.filter((m) => m.id !== id);
       setEditTeamList(updated);
       onUpdateTeamMembers(updated);
-      localStorage.setItem('vsm_team', JSON.stringify(updated));
+      try {
+        localStorage.setItem('vsm_team', JSON.stringify(updated));
+        saveSiteConfigToFirestore('team', updated);
+      } catch (e) {
+        console.warn(e);
+      }
       if (selectedMember && selectedMember.id === id) {
         setSelectedMember(null);
       }
@@ -572,23 +1014,73 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const handleSaveContacts = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateOrgContact(editContact);
-    localStorage.setItem('vsm_contact', JSON.stringify(editContact));
+    try {
+      localStorage.setItem('vsm_contact', JSON.stringify(editContact));
+      saveSiteConfigToFirestore('contact', editContact);
+    } catch (e) {
+      console.warn(e);
+    }
     showToast('कार्यालय का पता, हेल्पलाइन व संपर्क विवरण सफलतापूर्वक अपडेट हुए!');
   };
 
   // 5. Events Management
   const handleAddNewEvent = (e: React.FormEvent) => {
     e.preventDefault();
-    const newEv: SamajEvent = {
-      ...newEventForm,
-      id: `ev-${Date.now()}`,
-    };
-    const updated = [newEv, ...editEventsList];
+    let updated: SamajEvent[];
+    if (editingEventId) {
+      updated = editEventsList.map((ev) =>
+        ev.id === editingEventId ? { ...newEventForm, id: editingEventId } : ev
+      );
+      showToast('समाज आयोजन विवरण सफलतापूर्वक अपडेट किया गया!');
+    } else {
+      const newEv: SamajEvent = {
+        ...newEventForm,
+        id: `ev-${Date.now()}`,
+      };
+      updated = [newEv, ...editEventsList];
+      showToast('नया समाज आयोजन सफलतापूर्वक जोड़ा गया!');
+    }
     setEditEventsList(updated);
     onUpdateEvents(updated);
-    localStorage.setItem('vsm_events', JSON.stringify(updated));
+    try {
+      localStorage.setItem('vsm_events', JSON.stringify(updated));
+      saveSiteConfigToFirestore('events', updated);
+    } catch (e) {
+      console.warn(e);
+    }
     setIsAddingEvent(false);
-    showToast('नया समाज आयोजन सफलतापूर्वक जोड़ा गया!');
+    setEditingEventId(null);
+    setNewEventForm({
+      title: '',
+      date: '',
+      time: 'प्रातः 10:00 बजे',
+      venue: '',
+      city: '',
+      state: '',
+      organizer: 'अखिल भारतीय विश्वकर्मा समाज समिति',
+      category: 'महोत्सव',
+      attendeesCount: 500,
+      chiefGuest: '',
+      contactNumber: '',
+    });
+  };
+
+  const handleStartEditEvent = (ev: SamajEvent) => {
+    setEditingEventId(ev.id);
+    setNewEventForm({
+      title: ev.title,
+      date: ev.date,
+      time: ev.time || 'प्रातः 10:00 बजे',
+      venue: ev.venue,
+      city: ev.city,
+      state: ev.state || '',
+      organizer: ev.organizer || 'अखिल भारतीय विश्वकर्मा समाज समिति',
+      category: ev.category || 'महोत्सव',
+      attendeesCount: ev.attendeesCount || 500,
+      chiefGuest: ev.chiefGuest || '',
+      contactNumber: ev.contactNumber || '',
+    });
+    setIsAddingEvent(true);
   };
 
   const handleDeleteEvent = (id: string) => {
@@ -596,7 +1088,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       const updated = editEventsList.filter((ev) => ev.id !== id);
       setEditEventsList(updated);
       onUpdateEvents(updated);
-      localStorage.setItem('vsm_events', JSON.stringify(updated));
+      try {
+        localStorage.setItem('vsm_events', JSON.stringify(updated));
+        saveSiteConfigToFirestore('events', updated);
+      } catch (e) {
+        console.warn(e);
+      }
       showToast('आयोजन हटा दिया गया!');
     }
   };
@@ -863,7 +1360,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   onClick={() => setPinInput(currentPin)}
                   className="w-1/3 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold transition-all cursor-pointer border border-stone-300"
                 >
-                  {currentPin} स्वतः भरें
+                  {currentPin} (Super Admin)
                 </button>
 
                 <button
@@ -875,8 +1372,36 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 </button>
               </div>
 
-              <div className="text-[11px] text-stone-500 text-center">
-                सुरक्षा संकेत: डिफ़ॉल्ट व्यवस्थापक पासकोड <span className="font-mono font-bold text-amber-800">{currentPin}</span> है।
+              {/* Quick Multi-Admin Login Shortcuts */}
+              <div className="space-y-2 pt-2 border-t border-stone-200 text-left">
+                <div className="text-[11px] font-bold text-stone-700 flex items-center gap-1">
+                  <Crown className="w-3.5 h-3.5 text-amber-600" />
+                  <span>मल्टी-एडमिन त्वरित परीक्षण (Quick Role Logins):</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                  {subAdmins.slice(0, 4).map((sub) => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setPinInput(sub.pin)}
+                      className={`p-1.5 border rounded-lg text-left cursor-pointer transition-colors ${
+                        sub.roleKey === 'matrimony'
+                          ? 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-900'
+                          : sub.roleKey === 'events'
+                          ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-900'
+                          : sub.roleKey === 'youth'
+                          ? 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-900'
+                          : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-900'
+                      }`}
+                    >
+                      <div className="font-bold truncate">
+                        {sub.roleKey === 'matrimony' ? '💍 ' : sub.roleKey === 'events' ? '🎪 ' : sub.roleKey === 'youth' ? '💼 ' : '💰 '}
+                        {sub.role}
+                      </div>
+                      <div className="font-mono text-[10px] text-stone-600 font-bold">पिन: {sub.pin}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </form>
           </div>
@@ -896,20 +1421,46 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               </div>
             )}
 
-            {/* Master Admin Suite Navigation Toolbar - All 9 tabs 100% visible on all screens (PC, Laptop & Mobile) */}
-            <div className="bg-stone-100/95 border-b border-stone-200 px-3 sm:px-5 py-2.5 sm:py-3 flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Admin Header with Logged-in Role Badge and Logout */}
+            <div className="bg-stone-900 text-white px-4 py-2 border-b border-stone-800 flex items-center justify-between text-xs shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="p-1 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <Crown className="w-3.5 h-3.5" />
+                </span>
+                <span className="font-bold text-amber-200">{loggedInAdmin.name}</span>
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-800 text-stone-300 border border-stone-700">
+                  {loggedInAdmin.roleTitle}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAuthenticated(false);
+                    onLogout?.();
+                  }}
+                  className="px-2.5 py-1 text-[11px] font-bold text-stone-300 hover:text-white bg-stone-800 hover:bg-stone-700 rounded-lg cursor-pointer transition-colors"
+                >
+                  सुरक्षित लॉगआउट
+                </button>
+              </div>
+            </div>
+
+            {/* Master Admin Suite Navigation Toolbar - All 11 tabs with smooth horizontal scroll and clear visibility */}
+            <div className="bg-stone-100 border-b border-stone-200 px-3 sm:px-4 py-2 overflow-x-auto flex items-center gap-1.5 shrink-0 scrollbar-thin">
               {/* Tab 1: Applications */}
               <button
                 type="button"
                 onClick={() => setActiveTab('applications')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
                   activeTab === 'applications'
                     ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
                     : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
                 title="प्राप्त ऑनलाइन आवेदन (जॉब्स, छात्रवृत्ति, कार्यशाला)"
               >
-                <FileSpreadsheet className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'applications' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <FileSpreadsheet className={`w-3.5 h-3.5 ${activeTab === 'applications' ? 'text-amber-300' : 'text-amber-700'}`} />
                 <span>प्राप्त आवेदन</span>
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                   activeTab === 'applications' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
@@ -918,33 +1469,93 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 </span>
               </button>
 
-              {/* Tab 2: President & Founder */}
+              {/* Tab 2: Matrimony Profiles & Moderation */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('matrimony')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
+                  activeTab === 'matrimony'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
+                }`}
+                title="परिणय बायोडाटा एवं OTP मॉडरेशन (Phone SMS व WhatsApp)"
+              >
+                <Heart className={`w-3.5 h-3.5 ${activeTab === 'matrimony' ? 'text-rose-300 fill-rose-300' : 'text-rose-600'}`} />
+                <span>परिणय बायोडाटा</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  activeTab === 'matrimony' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
+                }`}>
+                  {firebaseMatrimonyProfiles.length > 0 ? firebaseMatrimonyProfiles.length : localMatrimonialProfiles.length}
+                </span>
+              </button>
+
+              {/* Tab 3: Multi-Admin & Super Admin Roles */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('multiadmin')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
+                  activeTab === 'multiadmin'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
+                }`}
+                title="मल्टी-एडमिन व सुपर एडमिन भूमिकाएं एवं पिन प्रबंधन"
+              >
+                <Crown className={`w-3.5 h-3.5 ${activeTab === 'multiadmin' ? 'text-amber-300' : 'text-amber-600'}`} />
+                <span>मल्टी-एडमिन रोल्स</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  activeTab === 'multiadmin' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
+                }`}>
+                  {subAdmins.length + 1}
+                </span>
+              </button>
+
+              {/* Tab 4: Luminaries (अमर विभूतियां व शिल्पी) */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('luminaries')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
+                  activeTab === 'luminaries'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
+                }`}
+                title="विश्वकर्मा वंश गौरव विभूतियां एवं अमर शिल्पी प्रबंधन"
+              >
+                <Award className={`w-3.5 h-3.5 ${activeTab === 'luminaries' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>अमर विभूतियां</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  activeTab === 'luminaries' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
+                }`}>
+                  {luminariesList.length}
+                </span>
+              </button>
+
+              {/* Tab 4: President & Founder */}
               <button
                 type="button"
                 onClick={() => setActiveTab('president')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
                   activeTab === 'president'
                     ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
                     : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
                 title="अध्यक्ष व संस्थापक संदेश एवं प्रोफाइल"
               >
-                <UserCheck className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'president' ? 'text-amber-300' : 'text-amber-700'}`} />
-                <span>अध्यक्ष व संस्थापक प्रोफ़ाइल</span>
+                <UserCheck className={`w-3.5 h-3.5 ${activeTab === 'president' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>अध्यक्ष प्रोफ़ाइल</span>
               </button>
 
-              {/* Tab 3: Team Members */}
+              {/* Tab 5: Team Members */}
               <button
                 type="button"
                 onClick={() => setActiveTab('team')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
                   activeTab === 'team'
                     ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
                     : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
                 title="राष्ट्रीय कार्यकारिणी व पदाधिकारी टीम सूची"
               >
-                <Users className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'team' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <Users className={`w-3.5 h-3.5 ${activeTab === 'team' ? 'text-amber-300' : 'text-amber-700'}`} />
                 <span>कार्यकारिणी व टीम</span>
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                   activeTab === 'team' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
@@ -953,63 +1564,63 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 </span>
               </button>
 
-              {/* Tab 4: Secretariat & Office */}
+              {/* Tab 6: Secretariat & Office */}
               <button
                 type="button"
                 onClick={() => setActiveTab('office')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
                   activeTab === 'office'
                     ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
                     : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
                 title="सचिवालय पता, हेल्पलाइन व संपर्क विवरण"
               >
-                <Building className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'office' ? 'text-amber-300' : 'text-amber-700'}`} />
-                <span>सचिवालय, पता व हेल्पलाइन</span>
+                <Building className={`w-3.5 h-3.5 ${activeTab === 'office' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>सचिवालय व पता</span>
               </button>
 
-              {/* Tab 5: Social Media */}
+              {/* Tab 7: Social Media */}
               <button
                 type="button"
                 onClick={() => setActiveTab('social')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
                   activeTab === 'social'
                     ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
                     : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
-                title="आधिकारिक सोशल मीडिया हैंडल्स (WhatsApp, YouTube, FB, Insta, Twitter, Telegram)"
+                title="आधिकारिक सोशल मीडिया लिंक्स"
               >
-                <Share2 className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'social' ? 'text-amber-300' : 'text-amber-700'}`} />
-                <span>सोशल मीडिया लिंक्स</span>
+                <Share2 className={`w-3.5 h-3.5 ${activeTab === 'social' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>सोशल मीडिया</span>
               </button>
 
-              {/* Tab 6: Donation & Bank */}
+              {/* Tab 8: Donation & Bank */}
               <button
                 type="button"
                 onClick={() => setActiveTab('donation')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
                   activeTab === 'donation'
                     ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
                     : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
                 title="दान, बैंक खाता व अधिकृत UPI सेटिंग्स"
               >
-                <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'donation' ? 'text-amber-300' : 'text-amber-700'}`} />
-                <span>दान व बैंक सेटिंग्स</span>
+                <Heart className={`w-3.5 h-3.5 ${activeTab === 'donation' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>दान व बैंक</span>
               </button>
 
-              {/* Tab 7: Forms & Schemes */}
+              {/* Tab 9: Forms & Schemes */}
               <button
                 type="button"
                 onClick={() => setActiveTab('schemes')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
                   activeTab === 'schemes'
                     ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
                     : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
                 title="फॉर्म्स, जॉब्स, छात्रवृत्ति व कार्यशाला प्रबंधन"
               >
-                <Briefcase className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'schemes' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <Briefcase className={`w-3.5 h-3.5 ${activeTab === 'schemes' ? 'text-amber-300' : 'text-amber-700'}`} />
                 <span>फॉर्म्स व रिक्तियां</span>
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                   activeTab === 'schemes' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
@@ -1018,18 +1629,18 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 </span>
               </button>
 
-              {/* Tab 8: Events (समाज आयोजन) */}
+              {/* Tab 10: Events (समाज आयोजन) */}
               <button
                 type="button"
                 onClick={() => setActiveTab('events')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
                   activeTab === 'events'
                     ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
                     : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
                 title="समाज आयोजन, सम्मेलन व महोत्सव प्रबंधन"
               >
-                <Calendar className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'events' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <Calendar className={`w-3.5 h-3.5 ${activeTab === 'events' ? 'text-amber-300' : 'text-amber-700'}`} />
                 <span>समाज आयोजन</span>
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                   activeTab === 'events' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
@@ -1038,19 +1649,19 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 </span>
               </button>
 
-              {/* Tab 9: Security & PIN (पिन व Firebase सेटिंग्स) */}
+              {/* Tab 11: Security & PIN (पिन व Firebase सेटिंग्स) */}
               <button
                 type="button"
                 onClick={() => setActiveTab('security')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
                   activeTab === 'security'
                     ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
                     : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
                 }`}
                 title="एडमिन पिन व Firebase सुरक्षा सेटिंग्स"
               >
-                <Lock className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'security' ? 'text-amber-300' : 'text-amber-700'}`} />
-                <span>पिन व Firebase सेटिंग्स</span>
+                <Lock className={`w-3.5 h-3.5 ${activeTab === 'security' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>पिन व सुरक्षा</span>
               </button>
             </div>
 
@@ -1309,7 +1920,928 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               )}
 
               {/* ======================================================== */}
-              {/* TAB 2: PRESIDENT & FOUNDER PROFILE */}
+              {/* TAB 2: MATRIMONIAL PROFILES & MODERATION */}
+              {/* ======================================================== */}
+              {activeTab === 'matrimony' && (() => {
+                const combinedMatrimonyList = (() => {
+                  const map = new Map<string, any>();
+                  firebaseMatrimonyProfiles.forEach((p) => map.set(p.id, p));
+                  localMatrimonialProfiles.forEach((p) => {
+                    if (!map.has(p.id)) map.set(p.id, p);
+                  });
+                  return Array.from(map.values());
+                })();
+
+                const filteredMatrimony = combinedMatrimonyList.filter((p) => {
+                  const matchesSearch =
+                    !matrimonySearch ||
+                    p.fullName?.toLowerCase().includes(matrimonySearch.toLowerCase()) ||
+                    p.city?.toLowerCase().includes(matrimonySearch.toLowerCase()) ||
+                    p.gotra?.toLowerCase().includes(matrimonySearch.toLowerCase()) ||
+                    p.contactNumber?.includes(matrimonySearch);
+                  const matchesGender =
+                    matrimonyGenderFilter === 'all' || p.gender === matrimonyGenderFilter;
+                  const matchesVerification =
+                    matrimonyFilter === 'all' ||
+                    (matrimonyFilter === 'verified' && p.isOtpVerified) ||
+                    (matrimonyFilter === 'unverified' && !p.isOtpVerified) ||
+                    (matrimonyFilter === 'whatsapp' && p.verificationMethod === 'whatsapp') ||
+                    (matrimonyFilter === 'firebase_sms' && (p.verificationMethod === 'firebase_sms' || (!p.verificationMethod && p.isOtpVerified)));
+                  return matchesSearch && matchesGender && matchesVerification;
+                });
+
+                const whatsappCount = combinedMatrimonyList.filter((p) => p.verificationMethod === 'whatsapp').length;
+                const phoneSmsCount = combinedMatrimonyList.filter(
+                  (p) => p.verificationMethod === 'firebase_sms' || (p.isOtpVerified && p.verificationMethod !== 'whatsapp')
+                ).length;
+                const liveCount = combinedMatrimonyList.filter((p) => p.profileVisibility !== 'hidden').length;
+
+                return (
+                  <div className="space-y-4">
+                    {/* Header Banner */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-base font-bold text-stone-900 font-display flex items-center gap-2">
+                          <Heart className="w-5 h-5 text-rose-600 fill-rose-600" />
+                          <span>विश्वकर्मा परिणय बायोडाटा एवं OTP मॉडरेशन</span>
+                        </h4>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          Firebase Phone OTP व WhatsApp द्वारा सत्यापित समस्त वैवाहिक पंजीकरण व लाइव मॉडरेशन।
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            loadFirebaseMatrimony();
+                            showToast('क्लाउड बायोडाटा पुनः लोड किया गया!');
+                          }}
+                          disabled={loadingMatrimonyCloud}
+                          className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-stone-300"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${loadingMatrimonyCloud ? 'animate-spin' : ''}`} />
+                          <span>रिफ्रेश</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Stats Metric Cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="bg-white p-3.5 rounded-2xl border border-stone-200 shadow-2xs">
+                        <div className="text-[11px] text-stone-500 font-medium">कुल बायोडाटा</div>
+                        <div className="text-xl font-bold font-mono text-stone-900 mt-0.5">{combinedMatrimonyList.length}</div>
+                        <div className="text-[10px] text-stone-400 mt-0.5">पंजीकृत प्रत्याशी</div>
+                      </div>
+
+                      <div className="bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200 shadow-2xs">
+                        <div className="text-[11px] text-emerald-800 font-bold flex items-center gap-1">
+                          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>WhatsApp सत्यापित</span>
+                        </div>
+                        <div className="text-xl font-bold font-mono text-emerald-950 mt-0.5">{whatsappCount}</div>
+                        <div className="text-[10px] text-emerald-700 mt-0.5">व्हाट्सएप कोड प्रमाणित</div>
+                      </div>
+
+                      <div className="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200 shadow-2xs">
+                        <div className="text-[11px] text-amber-900 font-bold flex items-center gap-1">
+                          <Smartphone className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Phone SMS सत्यापित</span>
+                        </div>
+                        <div className="text-xl font-bold font-mono text-amber-950 mt-0.5">{phoneSmsCount}</div>
+                        <div className="text-[10px] text-amber-800 mt-0.5">Firebase SMS प्रमाणित</div>
+                      </div>
+
+                      <div className="bg-white p-3.5 rounded-2xl border border-stone-200 shadow-2xs">
+                        <div className="text-[11px] text-stone-500 font-medium">सक्रिय लाइव</div>
+                        <div className="text-xl font-bold font-mono text-emerald-700 mt-0.5">{liveCount}</div>
+                        <div className="text-[10px] text-stone-400 mt-0.5">मंच पर दृश्यमान</div>
+                      </div>
+                    </div>
+
+                    {/* Filter and Search Bar */}
+                    <div className="bg-white p-3 rounded-2xl border border-stone-200 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={matrimonySearch}
+                            onChange={(e) => setMatrimonySearch(e.target.value)}
+                            placeholder="प्रत्याशी नाम, शहर, गोत्र या फोन..."
+                            className="pl-9 pr-3 py-1.5 bg-stone-50 border border-stone-300 rounded-xl text-xs w-48 sm:w-60 focus:outline-none focus:border-amber-600"
+                          />
+                        </div>
+
+                        <select
+                          value={matrimonyGenderFilter}
+                          onChange={(e: any) => setMatrimonyGenderFilter(e.target.value)}
+                          className="px-3 py-1.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-amber-600"
+                        >
+                          <option value="all">सभी प्रत्याशी</option>
+                          <option value="groom">वर प्रत्याशी (Groom)</option>
+                          <option value="bride">वधू प्रत्याशी (Bride)</option>
+                        </select>
+
+                        <select
+                          value={matrimonyFilter}
+                          onChange={(e: any) => setMatrimonyFilter(e.target.value)}
+                          className="px-3 py-1.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-amber-600"
+                        >
+                          <option value="all">सभी सत्यापन प्रकार</option>
+                          <option value="whatsapp">💬 केवल WhatsApp सत्यापित</option>
+                          <option value="firebase_sms">📱 केवल Phone SMS सत्यापित</option>
+                          <option value="verified">सत्यापित (Any OTP)</option>
+                          <option value="unverified">अपुष्ट (Pending OTP)</option>
+                        </select>
+                      </div>
+
+                      <div className="text-xs text-stone-500 font-mono">
+                        परिणाम: <strong>{filteredMatrimony.length}</strong> / {combinedMatrimonyList.length}
+                      </div>
+                    </div>
+
+                    {/* Profiles Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {filteredMatrimony.map((profile) => (
+                        <div
+                          key={profile.id}
+                          className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs hover:border-amber-400 transition-all flex flex-col justify-between space-y-3"
+                        >
+                          <div className="flex items-start gap-3.5">
+                            <img
+                              src={profile.photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200'}
+                              alt={profile.fullName}
+                              className="w-16 h-16 rounded-xl object-cover border border-stone-200 shrink-0 shadow-2xs"
+                            />
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <h5 className="font-bold text-stone-900 text-sm truncate">{profile.fullName}</h5>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                  profile.gender === 'groom' ? 'bg-amber-100 text-amber-900' : 'bg-rose-100 text-rose-900'
+                                }`}>
+                                  {profile.gender === 'groom' ? 'वर' : 'वधू'} · {profile.age} वर्ष
+                                </span>
+                              </div>
+
+                              <div className="text-xs text-stone-600 flex flex-wrap items-center gap-1.5">
+                                <span>{profile.subcaste}</span>
+                                <span>·</span>
+                                <span>गोत्र: <strong>{profile.gotra}</strong></span>
+                                <span>·</span>
+                                <span>{profile.city}, {profile.state}</span>
+                              </div>
+
+                              {/* Verification & Visibility Badges */}
+                              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                {profile.verificationMethod === 'whatsapp' ? (
+                                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-1 border border-emerald-300">
+                                    <MessageCircle className="w-3 h-3 text-emerald-600" />
+                                    <span>WhatsApp सत्यापित</span>
+                                  </span>
+                                ) : profile.isOtpVerified ? (
+                                  <span className="text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300">
+                                    <Smartphone className="w-3 h-3 text-amber-700" />
+                                    <span>Phone SMS सत्यापित</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">
+                                    प्रतीक्षारत
+                                  </span>
+                                )}
+
+                                {profile.profileVisibility === 'hidden' ? (
+                                  <span className="text-[10px] font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-300">
+                                    🔒 छिपा हुआ (Hidden)
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                    🌐 लाइव मंच
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Contact Info Preview */}
+                          <div className="p-2.5 bg-stone-50 rounded-xl text-xs space-y-1 text-stone-700 font-mono">
+                            <div className="flex items-center justify-between">
+                              <span className="font-sans text-stone-500 font-medium">संपर्क:</span>
+                              <strong>{profile.contactNumber || 'उपलब्ध नहीं'}</strong>
+                            </div>
+                            {profile.email && (
+                              <div className="flex items-center justify-between">
+                                <span className="font-sans text-stone-500 font-medium">ईमेल:</span>
+                                <span className="truncate max-w-[200px]">{profile.email}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Moderation Action Buttons */}
+                          <div className="flex items-center justify-between pt-2 border-t border-stone-100 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleMatrimonyVisibility(profile.id, profile.profileVisibility)}
+                              className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              {profile.profileVisibility === 'hidden' ? (
+                                <>
+                                  <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>लाइव करें</span>
+                                </>
+                              ) : (
+                                <>
+                                  <EyeOff className="w-3.5 h-3.5 text-stone-500" />
+                                  <span>छिपाएं</span>
+                                </>
+                              )}
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                              {profile.contactNumber && (
+                                <a
+                                  href={`https://wa.me/91${profile.contactNumber.replace(/[^0-9]/g, '').slice(-10)}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="p-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg transition-colors"
+                                  title="WhatsApp पर संपर्क करें"
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                </a>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMatrimonyProfile(profile.id)}
+                                className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>हटाएं</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {filteredMatrimony.length === 0 && (
+                      <div className="bg-white p-10 rounded-2xl border border-dashed border-stone-300 text-center text-stone-400">
+                        <Heart className="w-8 h-8 mx-auto mb-2 text-stone-300" />
+                        <p className="text-xs">कोई वैवाहिक बायोडाटा नहीं मिला।</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* ======================================================== */}
+              {/* TAB 3: MULTI-ADMIN & SUPER ADMIN MANAGEMENT */}
+              {/* ======================================================== */}
+              {activeTab === 'multiadmin' && (
+                <div className="space-y-5 max-w-4xl mx-auto">
+                  {/* Header & Add Button */}
+                  <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-base font-bold text-stone-900 font-display flex items-center gap-2">
+                        <Crown className="w-5 h-5 text-amber-600" />
+                        <span>मल्टी-एडमिन व सुपर एडमिन भूमिका नियंत्रण (RBAC)</span>
+                      </h4>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        विभिन्न विभागीय प्रभारियों (वैवाहिक, आयोजन, शिक्षा/जॉब, दान) हेतु अलग-अलग लॉगिन व पासकोड बनाएं।
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingSubAdmin(!isAddingSubAdmin)}
+                      className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <UserPlus className="w-4 h-4 text-amber-200" />
+                      <span>{isAddingSubAdmin ? 'फॉर्म बंद करें' : '+ नया उप-व्यवस्थापक जोड़ें'}</span>
+                    </button>
+                  </div>
+
+                  {/* Super Admin Master Identity Card */}
+                  <div className="bg-gradient-to-r from-amber-950 via-stone-900 to-amber-900 text-white p-5 rounded-2xl shadow-md border-2 border-amber-500/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
+                          <Crown className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm text-amber-200">👑 मुख्य सर्वोच्च व्यवस्थापक (Super Admin)</div>
+                          <div className="text-[11px] text-stone-300">सम्पूर्ण मास्टर कंट्रोल, सभी 11 टैब व सभी डेटा एक्सेस अधिकार</div>
+                        </div>
+                      </div>
+
+                      <span className="px-2.5 py-1 bg-amber-400/20 text-amber-300 rounded-full text-xs font-mono font-bold border border-amber-400/30">
+                        मास्टर पिन: {currentPin}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-stone-300 leading-relaxed font-hindi">
+                      सुपर एडमिन पिन से लॉगिन करने पर सभी मॉड्यूल (आवेदन, बायोडाटा, Multi-admin, टीम, वित्त व आयोजन) में परिवर्तन किया जा सकता है।
+                    </p>
+                  </div>
+
+                  {/* Add Sub-Admin Form Drawer */}
+                  {isAddingSubAdmin && (
+                    <div className="bg-white p-5 sm:p-6 rounded-2xl border-2 border-amber-400 shadow-md space-y-4 text-xs font-hindi animate-fadeIn">
+                      <div className="border-b border-stone-100 pb-2">
+                        <h5 className="font-bold text-sm text-stone-900">नया उप-व्यवस्थापक (Sub-Admin) विवरण</h5>
+                        <p className="text-[11px] text-stone-500">प्रभारी का नाम, विभाग एवं उनका 4-अंकीय गुप्त पिन निर्धारित करें।</p>
+                      </div>
+
+                      <form onSubmit={handleAddSubAdmin} className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="font-bold text-stone-800">प्रभारी का पूरा नाम *</label>
+                            <input
+                              type="text"
+                              required
+                              value={newSubAdminForm.name}
+                              onChange={(e) => setNewSubAdminForm({ ...newSubAdminForm, name: e.target.value })}
+                              placeholder="उदा. श्री सुरेश विश्वकर्मा"
+                              className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-bold text-stone-800">पदनाम / भूमिका (Role Title) *</label>
+                            <input
+                              type="text"
+                              required
+                              value={newSubAdminForm.role}
+                              onChange={(e) => setNewSubAdminForm({ ...newSubAdminForm, role: e.target.value })}
+                              placeholder="उदा. वैवाहिक प्रभारी (Matrimony Head)"
+                              className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-bold text-stone-800">विभागीय अधिकार (Department) *</label>
+                            <select
+                              value={newSubAdminForm.roleKey}
+                              onChange={(e: any) => setNewSubAdminForm({ ...newSubAdminForm, roleKey: e.target.value })}
+                              className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-bold"
+                            >
+                              <option value="matrimony">💍 वैवाहिक बायोडाटा (Matrimony & OTP)</option>
+                              <option value="events">🎪 समाज आयोजन व सम्मेलन (Events & PR)</option>
+                              <option value="youth">💼 शिक्षा, जॉब्स व कार्यशाला (Youth & Jobs)</option>
+                              <option value="donation">💰 कोषाध्यक्ष / दान व बैंक (Finance & Accounts)</option>
+                              <option value="general">🌐 सामान्य व्यवस्थापक (General Admin)</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-bold text-stone-800">4-अंकीय लॉगिन पिन (PIN) *</label>
+                            <input
+                              type="text"
+                              required
+                              maxLength={6}
+                              value={newSubAdminForm.pin}
+                              onChange={(e) => setNewSubAdminForm({ ...newSubAdminForm, pin: e.target.value })}
+                              placeholder="उदा. 7788"
+                              className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono font-bold"
+                            />
+                          </div>
+
+                          <div className="space-y-1 sm:col-span-2">
+                            <label className="font-bold text-stone-800">संपर्क मोबाइल नंबर *</label>
+                            <input
+                              type="text"
+                              required
+                              value={newSubAdminForm.phone}
+                              onChange={(e) => setNewSubAdminForm({ ...newSubAdminForm, phone: e.target.value })}
+                              placeholder="उदा. +91 98290 12345"
+                              className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-stone-100">
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingSubAdmin(false)}
+                            className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl font-bold cursor-pointer"
+                          >
+                            रद्द करें
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-5 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                          >
+                            <Save className="w-4 h-4 text-amber-200" />
+                            <span>उप-व्यवस्थापक सुरक्षित करें</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Sub-Admins List */}
+                  <div className="space-y-3">
+                    <h5 className="font-bold text-sm text-stone-900 flex items-center justify-between">
+                      <span>सक्रिय उप-व्यवस्थापक सूची ({subAdmins.length})</span>
+                      <span className="text-xs text-stone-500 font-normal">लॉगिन स्क्रीन पर पिन दर्ज करते ही संबंधित विभाग खुलता है।</span>
+                    </h5>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {subAdmins.map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs space-y-3 hover:border-amber-400 transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="font-bold text-sm text-stone-900">{sub.name}</div>
+                              <div className="text-xs text-amber-800 font-medium">{sub.role}</div>
+                            </div>
+
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              sub.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-100 text-stone-500'
+                            }`}>
+                              {sub.isActive ? 'सक्रिय (Active)' : 'निष्क्रिय'}
+                            </span>
+                          </div>
+
+                          <div className="p-2.5 bg-stone-50 rounded-xl text-xs space-y-1.5 font-mono text-stone-700">
+                            <div className="flex justify-between items-center">
+                              <span className="font-sans text-stone-500">विभाग:</span>
+                              <strong className="uppercase">{sub.roleKey}</strong>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="font-sans text-stone-500">लॉगिन पिन:</span>
+                              <div className="flex items-center gap-2">
+                                <strong className="text-amber-900 font-bold bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                                  {sub.pin}
+                                </strong>
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartChangePrabhariPin(sub)}
+                                  className="text-[11px] font-sans font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-1"
+                                  title="सुपर एडमिन: इस प्रभारी का पिन बदलें"
+                                >
+                                  <KeyRound className="w-3 h-3 text-amber-600" />
+                                  <span>पिन बदलें</span>
+                                </button>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="font-sans text-stone-500">फोन:</span>
+                              <span>{sub.phone}</span>
+                            </div>
+                          </div>
+
+                          {/* Inline PIN Change Form for this Prabhari */}
+                          {editingPrabhariPinId === sub.id && (
+                            <form
+                              onSubmit={(e) => handleSavePrabhariPin(sub.id, e)}
+                              className="p-3 bg-amber-50/90 border-2 border-amber-400 rounded-xl space-y-2 text-xs font-hindi animate-fadeIn"
+                            >
+                              <div className="font-bold text-amber-950 flex items-center justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Key className="w-3.5 h-3.5 text-amber-700" />
+                                  <span>{sub.name} का नया पिन निर्धारित करें:</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingPrabhariPinId(null)}
+                                  className="text-stone-400 hover:text-stone-700 p-0.5"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              {prabhariPinError && (
+                                <div className="text-[11px] text-red-600 font-bold bg-red-50 p-1.5 rounded border border-red-200">
+                                  {prabhariPinError}
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-bold text-stone-700 block mb-0.5">नया पिन (4+ अंक):</label>
+                                  <input
+                                    type="password"
+                                    required
+                                    autoFocus
+                                    maxLength={6}
+                                    placeholder="नया पिन"
+                                    value={newPrabhariPin}
+                                    onChange={(e) => setNewPrabhariPin(e.target.value)}
+                                    className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg font-mono text-center font-bold"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-stone-700 block mb-0.5">पिन पुनः दर्ज करें:</label>
+                                  <input
+                                    type="password"
+                                    required
+                                    maxLength={6}
+                                    placeholder="पुष्टि पिन"
+                                    value={confirmPrabhariPin}
+                                    onChange={(e) => setConfirmPrabhariPin(e.target.value)}
+                                    className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg font-mono text-center font-bold"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex justify-end gap-1.5 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingPrabhariPinId(null)}
+                                  className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-[11px] font-semibold cursor-pointer"
+                                >
+                                  रद्द करें
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="px-3 py-1 bg-amber-800 hover:bg-amber-900 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-2xs cursor-pointer"
+                                >
+                                  <Save className="w-3 h-3 text-amber-200" />
+                                  <span>पिन अपडेट करें</span>
+                                </button>
+                              </div>
+                            </form>
+                          )}
+
+                          <div className="flex items-center justify-between pt-2 border-t border-stone-100 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSubAdminStatus(sub.id)}
+                              className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-semibold cursor-pointer"
+                            >
+                              {sub.isActive ? 'निष्क्रिय करें' : 'सक्रिय करें'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSubAdmin(sub.id)}
+                              className="px-2.5 py-1 text-red-600 hover:bg-red-50 rounded-lg font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>हटाएं</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ======================================================== */}
+              {/* TAB: LUMINARIES & AMAR SHILPI (अमर शिल्पी व गौरव विभूतियां) */}
+              {/* ======================================================== */}
+              {activeTab === 'luminaries' && (() => {
+                const filteredLuminaries = luminariesList.filter((person) => {
+                  const matchesCategory =
+                    luminaryCategoryFilter === 'all' || person.category === luminaryCategoryFilter;
+                  const matchesSearch =
+                    !luminarySearch ||
+                    person.name.toLowerCase().includes(luminarySearch.toLowerCase()) ||
+                    person.title.toLowerCase().includes(luminarySearch.toLowerCase()) ||
+                    person.era.toLowerCase().includes(luminarySearch.toLowerCase()) ||
+                    person.famousWorks?.some((w) => w.toLowerCase().includes(luminarySearch.toLowerCase()));
+                  return matchesCategory && matchesSearch;
+                });
+
+                return (
+                  <div className="space-y-5">
+                    {/* Header Banner */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-base font-bold text-stone-900 font-display flex items-center gap-2">
+                          <Award className="w-5 h-5 text-amber-700" />
+                          <span>विश्वकर्मा वंश गौरव विभूतियां एवं अमर शिल्पी प्रबंधन (Hall of Fame)</span>
+                        </h4>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          इतिहास व आधुनिक युग के अमर शिल्पियों, मूर्तिकारों व वास्तुविदों के जीवन परिचय, कृतियों व सम्मानों का व्यवस्थापक नियंत्रण।
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleOpenAddLuminary}
+                        className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+                      >
+                        <Plus className="w-4 h-4 text-amber-200" />
+                        <span>+ नई अमर विभूति जोड़ें</span>
+                      </button>
+                    </div>
+
+                    {/* Add / Edit Form Drawer */}
+                    {isAddingLuminary && (
+                      <div className="bg-amber-50/90 p-5 sm:p-6 rounded-2xl border-2 border-amber-400 space-y-4 shadow-sm animate-fadeIn text-xs">
+                        <div className="flex items-center justify-between border-b border-amber-200 pb-2.5">
+                          <h5 className="font-bold text-sm text-amber-950 font-display flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-amber-700" />
+                            <span>
+                              {editingLuminaryId
+                                ? 'अमर विभूति विवरण संपादित करें (Edit Luminary)'
+                                : 'नई अमर विभूति / शिल्पी विवरण जोड़ें (Add New Luminary)'}
+                            </span>
+                          </h5>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingLuminary(false);
+                              setEditingLuminaryId(null);
+                            }}
+                            className="text-stone-400 hover:text-stone-700 p-1 cursor-pointer"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <form onSubmit={handleSaveLuminary} className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                            {/* Left: Photo Upload & Preview */}
+                            <div className="md:col-span-4 space-y-3 text-center">
+                              <div className="w-36 h-44 mx-auto rounded-2xl overflow-hidden border-2 border-amber-400 shadow-2xs bg-stone-100 flex items-center justify-center">
+                                {luminaryForm.photo ? (
+                                  <img
+                                    src={luminaryForm.photo}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover"
+                                    onError={(e: any) => {
+                                      e.target.src = 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600';
+                                    }}
+                                  />
+                                ) : (
+                                  <ImageIcon className="w-10 h-10 text-stone-300" />
+                                )}
+                              </div>
+
+                              <input
+                                type="file"
+                                ref={luminaryPhotoInputRef}
+                                accept="image/png, image/jpeg, image/jpg, image/webp"
+                                onChange={handleLuminaryPhotoUpload}
+                                className="hidden"
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() => luminaryPhotoInputRef.current?.click()}
+                                className="w-full py-2 px-3 bg-amber-800 hover:bg-amber-900 text-white rounded-xl font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs text-[11px]"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>फ़ोटो अपलोड करें (PNG/JPG)</span>
+                              </button>
+
+                              <div className="space-y-1 text-left">
+                                <label className="text-[10px] font-bold text-stone-700">या फ़ोटो वेब लिंक (URL):</label>
+                                <input
+                                  type="url"
+                                  value={luminaryForm.photo}
+                                  onChange={(e) => setLuminaryForm({ ...luminaryForm, photo: e.target.value })}
+                                  placeholder="https://..."
+                                  className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg font-mono text-[11px]"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Right: Fields */}
+                            <div className="md:col-span-8 space-y-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <label className="font-bold text-stone-800">विभूति / शिल्पी का नाम *</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    value={luminaryForm.name}
+                                    onChange={(e) => setLuminaryForm({ ...luminaryForm, name: e.target.value })}
+                                    placeholder="उदा. पद्मभूषण राम वी. सुतार"
+                                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="font-bold text-stone-800">उपाधि / पदवी (Title) *</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    value={luminaryForm.title}
+                                    onChange={(e) => setLuminaryForm({ ...luminaryForm, title: e.target.value })}
+                                    placeholder="उदा. विश्वविख्यात मूर्तिकार एवं राष्ट्रशिल्पी"
+                                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="font-bold text-stone-800">कालखंड / युग (Era) *</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    value={luminaryForm.era}
+                                    onChange={(e) => setLuminaryForm({ ...luminaryForm, era: e.target.value })}
+                                    placeholder="उदा. आधुनिक काल (जन्म: 1925) अथवा 1860 - 1962"
+                                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="font-bold text-stone-800">श्रेणी (Category) *</label>
+                                  <select
+                                    value={luminaryForm.category}
+                                    onChange={(e: any) => setLuminaryForm({ ...luminaryForm, category: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl"
+                                  >
+                                    <option value="modern">आधुनिक काल (Modern Era)</option>
+                                    <option value="ancient">पौराणिक व ऐतिहासिक काल (Ancient Heritage)</option>
+                                    <option value="architecture">स्थापत्य व वास्तु (Architecture)</option>
+                                    <option value="art">मूर्तिकला व कला (Sculpture & Art)</option>
+                                    <option value="engineering">इंजीनियरिंग व विज्ञान (Engineering & Tech)</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="font-bold text-stone-800">
+                                  प्रमुख ऐतिहासिक कृतियां व निर्माण (अल्पविराम ',' से अलग करें) *
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={luminaryForm.famousWorks}
+                                  onChange={(e) => setLuminaryForm({ ...luminaryForm, famousWorks: e.target.value })}
+                                  placeholder="उदा. स्टैच्यू ऑफ यूनिटी, संसद भवन स्थित गांधी प्रतिमा, अमृतसर शहीद स्मारक"
+                                  className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="font-bold text-stone-800">
+                                  प्राप्त सम्मान व उपाधियां (अल्पविराम ',' से अलग करें):
+                                </label>
+                                <input
+                                  type="text"
+                                  value={luminaryForm.honors}
+                                  onChange={(e) => setLuminaryForm({ ...luminaryForm, honors: e.target.value })}
+                                  placeholder="उदा. पद्म भूषण (2016), पद्म श्री (1999), टैगोर सांस्कृतिक समरसता पुरस्कार"
+                                  className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="font-bold text-stone-800">
+                                  जीवन परिचय, साधना व योगदान (Short Bio):
+                                </label>
+                                <textarea
+                                  rows={3}
+                                  value={luminaryForm.shortBio}
+                                  onChange={(e) => setLuminaryForm({ ...luminaryForm, shortBio: e.target.value })}
+                                  placeholder="विभूति का संक्षिप्त जीवन परिचय, जन्म स्थान, समाज व राष्ट्र के लिए उनका गौरवमयी योगदान..."
+                                  className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-3 border-t border-amber-200">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsAddingLuminary(false);
+                                setEditingLuminaryId(null);
+                              }}
+                              className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-xl font-bold cursor-pointer"
+                            >
+                              रद्द करें
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-5 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                            >
+                              <Save className="w-4 h-4 text-amber-200" />
+                              <span>{editingLuminaryId ? 'अपडेट सुरक्षित करें' : 'विभूति प्रकाशित करें'}</span>
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+
+                    {/* Filter and Search Bar */}
+                    <div className="bg-white p-3 rounded-2xl border border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={luminarySearch}
+                            onChange={(e) => setLuminarySearch(e.target.value)}
+                            placeholder="विभूति नाम, उपाधि या कृति से खोजें..."
+                            className="pl-9 pr-3 py-1.5 bg-stone-50 border border-stone-300 rounded-xl w-56 sm:w-64 focus:outline-none focus:border-amber-600"
+                          />
+                        </div>
+
+                        <select
+                          value={luminaryCategoryFilter}
+                          onChange={(e) => setLuminaryCategoryFilter(e.target.value)}
+                          className="px-3 py-1.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-amber-600"
+                        >
+                          <option value="all">समस्त श्रेणियां ({luminariesList.length})</option>
+                          <option value="modern">आधुनिक काल</option>
+                          <option value="ancient">पौराणिक व ऐतिहासिक</option>
+                          <option value="architecture">स्थापत्य व वास्तु</option>
+                          <option value="art">मूर्तिकला व कला</option>
+                          <option value="engineering">इंजीनियरिंग व विज्ञान</option>
+                        </select>
+                      </div>
+
+                      <div className="text-stone-500 font-mono">
+                        सूचीबद्ध विभूतियां: <strong>{filteredLuminaries.length}</strong> / {luminariesList.length}
+                      </div>
+                    </div>
+
+                    {/* Luminaries Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {filteredLuminaries.map((person) => (
+                        <div
+                          key={person.id}
+                          className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs hover:border-amber-400 transition-all flex flex-col justify-between space-y-3"
+                        >
+                          <div className="flex items-start gap-3.5">
+                            <div className="w-20 h-24 rounded-xl overflow-hidden border border-amber-300 shrink-0 bg-stone-900 shadow-2xs">
+                              <img
+                                src={person.photo}
+                                alt={person.name}
+                                className="w-full h-full object-cover"
+                                onError={(e: any) => {
+                                  e.target.src = 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600';
+                                }}
+                              />
+                            </div>
+
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                                  {person.era}
+                                </span>
+                                <span className="text-[10px] text-stone-500 font-semibold uppercase">
+                                  {person.category}
+                                </span>
+                              </div>
+
+                              <h5 className="font-bold text-stone-900 text-sm leading-snug">
+                                {person.name}
+                              </h5>
+
+                              <div className="text-xs text-amber-800 font-medium">
+                                {person.title}
+                              </div>
+
+                              {person.famousWorks && person.famousWorks.length > 0 && (
+                                <div className="text-[11px] text-stone-600 line-clamp-2">
+                                  <strong>कृतियां:</strong> {person.famousWorks.join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-stone-100 text-xs">
+                            <div className="text-[11px] text-stone-500 font-mono">
+                              ID: {person.id}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleEditLuminary(person)}
+                                className="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span>संपादित करें</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteLuminary(person.id)}
+                                className="px-2.5 py-1 text-red-600 hover:bg-red-50 rounded-lg font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>हटाएं</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {filteredLuminaries.length === 0 && (
+                      <div className="bg-white p-10 rounded-2xl border border-dashed border-stone-300 text-center text-stone-400">
+                        <Award className="w-8 h-8 mx-auto mb-2 text-stone-300" />
+                        <p className="text-xs">कोई विभूति नहीं मिली।</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* ======================================================== */}
+              {/* TAB 4: PRESIDENT & FOUNDER PROFILE */}
               {/* ======================================================== */}
               {activeTab === 'president' && (
                 <div className="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
@@ -3435,7 +4967,23 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
 
                     <button
-                      onClick={() => setIsAddingEvent(true)}
+                      onClick={() => {
+                        setEditingEventId(null);
+                        setNewEventForm({
+                          title: '',
+                          date: '',
+                          time: 'प्रातः 10:00 बजे',
+                          venue: '',
+                          city: '',
+                          state: '',
+                          organizer: 'अखिल भारतीय विश्वकर्मा समाज समिति',
+                          category: 'महोत्सव',
+                          attendeesCount: 500,
+                          chiefGuest: '',
+                          contactNumber: '',
+                        });
+                        setIsAddingEvent(true);
+                      }}
                       className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
                     >
                       <Plus className="w-4 h-4" />
@@ -3447,10 +4995,21 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   {isAddingEvent && (
                     <div className="bg-amber-50/80 p-5 rounded-2xl border-2 border-amber-400 space-y-4">
                       <div className="flex items-center justify-between border-b border-amber-200 pb-2">
-                        <h5 className="font-bold text-sm text-amber-950 font-display">
-                          नया समाज आयोजन जोड़ें (Create New Event)
+                        <h5 className="font-bold text-sm text-amber-950 font-display flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-amber-800" />
+                          <span>
+                            {editingEventId
+                              ? 'समाज आयोजन संपादित करें (Edit Samaj Event)'
+                              : 'नया समाज आयोजन जोड़ें (Create New Event)'}
+                          </span>
                         </h5>
-                        <button onClick={() => setIsAddingEvent(false)} className="text-stone-500 hover:text-stone-800">
+                        <button
+                          onClick={() => {
+                            setIsAddingEvent(false);
+                            setEditingEventId(null);
+                          }}
+                          className="text-stone-500 hover:text-stone-800"
+                        >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
@@ -3592,13 +5151,23 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             {ev.attendeesCount} समाज बंधु अपेक्षित
                           </span>
 
-                          <button
-                            onClick={() => handleDeleteEvent(ev.id)}
-                            className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>हटाएं</span>
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleStartEditEvent(ev)}
+                              className="px-3 py-1 text-amber-800 hover:bg-amber-100/60 rounded-lg font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                              title="आयोजन संपादित करें"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              <span>संपादित करें</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEvent(ev.id)}
+                              className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>हटाएं</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -3662,6 +5231,69 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <span>पिन अपडेट करें</span>
                       </button>
                     </form>
+                  </div>
+
+                  {/* Prabhari / Sub-Admin PIN Management Box for Super Admin */}
+                  <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
+                    <div className="border-b border-stone-100 pb-3 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h4 className="text-base font-bold text-stone-900 font-display flex items-center gap-2">
+                          <Crown className="w-4 h-4 text-amber-600" />
+                          <span>विभागीय प्रभारियों के लॉगिन पिन प्रबंधन (Prabhari PIN Control)</span>
+                        </h4>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          सुपर एडमिन अधिकार: किसी भी विभागीय प्रभारी (वैवाहिक, आयोजन, युवा, दान) का लॉगिन पिन यहाँ से सीधे बदलें।
+                        </p>
+                      </div>
+                      <span className="px-2.5 py-1 bg-amber-100 text-amber-900 rounded-full text-[11px] font-bold border border-amber-300">
+                        {subAdmins.length} प्रभारी पंजीकृत
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {subAdmins.map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-stone-900">{sub.name}</span>
+                              <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
+                                sub.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'
+                              }`}>
+                                {sub.isActive ? 'सक्रिय' : 'निष्क्रिय'}
+                              </span>
+                            </div>
+                            <div className="text-stone-500 text-[11px]">
+                              पद: <strong>{sub.role}</strong> · विभाग: <strong className="uppercase">{sub.roleKey}</strong> · फोन: {sub.phone}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <span className="text-[10px] text-stone-400 block">वर्तमान पिन:</span>
+                              <span className="font-mono font-bold text-amber-950 bg-amber-100 px-2.5 py-0.5 rounded border border-amber-300 text-xs">
+                                {sub.pin}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleStartChangePrabhariPin(sub);
+                                setActiveTab('multiadmin');
+                              }}
+                              className="px-3.5 py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                              title="इस प्रभारी का नया पिन सेट करें"
+                            >
+                              <Key className="w-3.5 h-3.5 text-amber-200" />
+                              <span>पिन बदलें</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Firebase Cloud Info */}

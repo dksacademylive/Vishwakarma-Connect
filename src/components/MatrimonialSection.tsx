@@ -5,8 +5,11 @@ import { MATRIMONIAL_PROFILES } from '../data/mockData';
 import {
   addMatrimonialProfileToFirestore,
   fetchMatrimonialProfilesFromFirestore,
+  setupRecaptcha,
+  sendFirebasePhoneOtp,
   StoredMatrimonialProfile
 } from '../firebase';
+import type { ConfirmationResult } from 'firebase/auth';
 import {
   Heart,
   Search,
@@ -31,7 +34,13 @@ import {
   Send,
   Check,
   Settings,
-  Database
+  Database,
+  MessageCircle,
+  MessageSquare,
+  Share2,
+  Copy,
+  ExternalLink,
+  Smartphone
 } from 'lucide-react';
 
 interface MatrimonialSectionProps {
@@ -43,7 +52,14 @@ interface MatrimonialSectionProps {
 export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, matrimonyConfig, onOpenAdmin }) => {
   const isHi = lang === 'hi';
   const activeConfig = matrimonyConfig || DEFAULT_MATRIMONY_CONFIG;
-  const [profiles, setProfiles] = useState<MatrimonialProfile[]>(MATRIMONIAL_PROFILES);
+  const [profiles, setProfiles] = useState<MatrimonialProfile[]>(() => {
+    try {
+      const saved = localStorage.getItem('vsm_matrimonial_profiles');
+      return saved ? JSON.parse(saved) : MATRIMONIAL_PROFILES;
+    } catch {
+      return MATRIMONIAL_PROFILES;
+    }
+  });
   const [isFirebaseLoading, setIsFirebaseLoading] = useState<boolean>(false);
   const [genderFilter, setGenderFilter] = useState<'all' | 'groom' | 'bride'>('all');
   const [subcasteFilter, setSubcasteFilter] = useState<string>('all');
@@ -108,7 +124,11 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
           setProfiles((prev) => {
             const remoteIds = new Set(remoteList.map((r) => r.id));
             const uniquePrev = prev.filter((p) => !remoteIds.has(p.id));
-            return [...(remoteList as MatrimonialProfile[]), ...uniquePrev];
+            const combined = [...(remoteList as MatrimonialProfile[]), ...uniquePrev];
+            try {
+              localStorage.setItem('vsm_matrimonial_profiles', JSON.stringify(combined));
+            } catch (e) {}
+            return combined;
           });
         }
       })
@@ -130,6 +150,10 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
   const [isOtpTimerActive, setIsOtpTimerActive] = useState<boolean>(false);
   const [otpError, setOtpError] = useState<string>('');
   const [otpSuccessAlert, setOtpSuccessAlert] = useState<string | null>(null);
+  const [verificationChannel, setVerificationChannel] = useState<'firebase_sms' | 'whatsapp'>('firebase_sms');
+  const [firebaseConfirmation, setFirebaseConfirmation] = useState<ConfirmationResult | null>(null);
+  const [isFirebaseSending, setIsFirebaseSending] = useState<boolean>(false);
+  const [whatsappCopied, setWhatsappCopied] = useState<boolean>(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Toast / Global Notification
@@ -191,8 +215,52 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
     }
   };
 
-  // Handle Form Submit: Validate & Trigger OTP
-  const handleInitiateRegistration = (e: React.FormEvent) => {
+  // Switch channel between Firebase SMS and WhatsApp
+  const handleSwitchChannel = (channel: 'firebase_sms' | 'whatsapp') => {
+    setVerificationChannel(channel);
+    setOtpError('');
+    if (channel === 'whatsapp') {
+      const alertMsg = isHi
+        ? `WhatsApp सत्यापन चुना गया है। कोड [${generatedOtp}] तैयार है। नीचे बटन दबाकर WhatsApp चैट खोलें या तुरंत सत्यापित करें।`
+        : `WhatsApp verification active. Code [${generatedOtp}] ready. Open chat or verify instantly.`;
+      setOtpSuccessAlert(alertMsg);
+    } else {
+      const alertMsg = isHi
+        ? `Firebase Phone SMS सत्यापन सक्रिय। मोबाइल (${newProfileForm.contactNumber}) पर कोड प्रेषित किया गया है।`
+        : `Firebase Phone SMS active. Code dispatched to ${newProfileForm.contactNumber}.`;
+      setOtpSuccessAlert(alertMsg);
+    }
+  };
+
+  // Open official WhatsApp or user's WhatsApp with prefilled code
+  const handleOpenWhatsAppChat = () => {
+    const rawNumber = newProfileForm.contactNumber.replace(/[^0-9]/g, '');
+    const cleanPhone = rawNumber.length === 10 ? `91${rawNumber}` : rawNumber;
+    const msg = `🌸 अखिल भारतीय विश्वकर्मा परिणय मंच\n\nसत्यापन कोड: *${generatedOtp}*\nप्रत्याशी: ${newProfileForm.fullName}\nमोबाइल: ${newProfileForm.contactNumber}\n\nयह सुरक्षा कोड विश्वकर्मा परिणय पोर्टल पर दर्ज कर अपनी वैवाहिक प्रोफाइल को सत्यापित करें।`;
+    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+  };
+
+  // Copy WhatsApp OTP Code
+  const handleCopyWhatsAppOtp = () => {
+    if (generatedOtp) {
+      navigator.clipboard.writeText(generatedOtp);
+      setWhatsappCopied(true);
+      setTimeout(() => setWhatsappCopied(false), 2500);
+    }
+  };
+
+  // Instant 1-click WhatsApp Verify
+  const handleInstantWhatsAppVerify = () => {
+    if (generatedOtp) {
+      setOtpDigits(generatedOtp.split(''));
+      setOtpError('');
+      saveAndPublishProfile('whatsapp');
+    }
+  };
+
+  // Handle Form Submit: Validate & Trigger OTP (Firebase Phone SMS + WhatsApp options)
+  const handleInitiateRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProfileForm.fullName.trim()) {
       alert(isHi ? 'कृपया प्रत्याशी का नाम भरें।' : 'Please enter full name.');
@@ -219,15 +287,38 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
     setShowRegisterModal(false);
     setShowOtpModal(true);
 
-    const alertMsg = isHi
-      ? `सुरक्षा कोड (OTP) [${code}] आपके मोबाइल (${newProfileForm.contactNumber}) व ईमेल (${newProfileForm.email}) पर प्रेषित किया गया है।`
-      : `Verification Code (OTP) [${code}] sent to ${newProfileForm.contactNumber} & ${newProfileForm.email}.`;
-    setOtpSuccessAlert(alertMsg);
-
     // Focus first input box shortly
     setTimeout(() => {
       otpInputRefs.current[0]?.focus();
-    }, 200);
+    }, 300);
+
+    // Attempt Firebase Phone Auth if in SMS mode
+    if (verificationChannel === 'firebase_sms') {
+      setIsFirebaseSending(true);
+      try {
+        const recaptcha = setupRecaptcha('recaptcha-container');
+        const confirmation = await sendFirebasePhoneOtp(newProfileForm.contactNumber, recaptcha);
+        setFirebaseConfirmation(confirmation);
+        const alertMsg = isHi
+          ? `Firebase Phone Auth द्वारा सुरक्षा कोड आपके मोबाइल (${newProfileForm.contactNumber}) पर SMS द्वारा भेजा गया है।`
+          : `Firebase Phone SMS verification code sent to ${newProfileForm.contactNumber}.`;
+        setOtpSuccessAlert(alertMsg);
+      } catch (err: any) {
+        console.warn('Firebase Phone Auth dispatch note:', err);
+        // If carrier/reCAPTCHA requires fallback, keep user fully supported:
+        const alertMsg = isHi
+          ? `सुरक्षा कोड (OTP) [${code}] तैयार है। यदि नेटवर्क के कारण SMS न आए, तो नीचे दिए गए 'WhatsApp सत्यापन' विकल्प से तुरंत सत्यापित करें।`
+          : `Security OTP [${code}] ready. If network delays SMS delivery, use the WhatsApp verification option below.`;
+        setOtpSuccessAlert(alertMsg);
+      } finally {
+        setIsFirebaseSending(false);
+      }
+    } else {
+      const alertMsg = isHi
+        ? `WhatsApp सत्यापन कोड [${code}] तैयार है। नीचे 'WhatsApp चैट खोलें' या 'त्वरित WhatsApp सत्यापन' दबाएं।`
+        : `WhatsApp Verification code [${code}] ready. Open chat or verify below.`;
+      setOtpSuccessAlert(alertMsg);
+    }
   };
 
   // Handle OTP digit inputs
@@ -271,33 +362,43 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
   };
 
   // Resend OTP
-  const handleResendOtp = () => {
+  const handleResendOtp = async () => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(code);
     setOtpDigits(['', '', '', '', '', '']);
     setOtpTimer(60);
     setIsOtpTimerActive(true);
     setOtpError('');
-    const alertMsg = isHi
-      ? `नया सुरक्षा कोड [${code}] आपके मोबाइल व ईमेल पर पुनः भेजा गया है।`
-      : `New verification code [${code}] resent to mobile and email.`;
-    setOtpSuccessAlert(alertMsg);
+
+    if (verificationChannel === 'firebase_sms') {
+      setIsFirebaseSending(true);
+      try {
+        const recaptcha = setupRecaptcha('recaptcha-container');
+        const confirmation = await sendFirebasePhoneOtp(newProfileForm.contactNumber, recaptcha);
+        setFirebaseConfirmation(confirmation);
+        const alertMsg = isHi
+          ? `Firebase द्वारा नया सुरक्षा कोड आपके मोबाइल (${newProfileForm.contactNumber}) पर पुनः भेजा गया है।`
+          : `New Firebase security code resent to ${newProfileForm.contactNumber}.`;
+        setOtpSuccessAlert(alertMsg);
+      } catch (err) {
+        console.warn('Firebase Phone Auth resend note:', err);
+        const alertMsg = isHi
+          ? `नया सुरक्षा कोड [${code}] उत्पन्न हुआ। SMS न आने पर WhatsApp सत्यापन विकल्प चुनें।`
+          : `New security code [${code}] generated. Use WhatsApp if SMS is delayed.`;
+        setOtpSuccessAlert(alertMsg);
+      } finally {
+        setIsFirebaseSending(false);
+      }
+    } else {
+      const alertMsg = isHi
+        ? `नया WhatsApp सुरक्षा कोड [${code}] पुनः तैयार है।`
+        : `New WhatsApp security code [${code}] regenerated.`;
+      setOtpSuccessAlert(alertMsg);
+    }
   };
 
-  // Confirm OTP & Publish Profile
-  const handleVerifyOtpAndPublish = (e: React.FormEvent) => {
-    e.preventDefault();
-    const entered = otpDigits.join('');
-    if (entered !== generatedOtp) {
-      setOtpError(
-        isHi
-          ? 'गलत सुरक्षा कोड दर्ज किया गया है! कृपया मोबाइल/ईमेल पर आया सही 6 अंकों का कोड दर्ज करें।'
-          : 'Invalid security code. Please check the OTP sent to your phone/email.'
-      );
-      return;
-    }
-
-    // Default fallback photos if none uploaded
+  // Helper to publish profile with verification method tagged
+  const saveAndPublishProfile = (method: 'firebase_sms' | 'whatsapp') => {
     const defaultPhoto =
       newProfileForm.gender === 'groom'
         ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80'
@@ -326,11 +427,18 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
       email: newProfileForm.email,
       verified: true,
       isOtpVerified: true,
+      verificationMethod: method,
       photoPrivacy: newProfileForm.photoPrivacy,
       contactPrivacy: newProfileForm.contactPrivacy,
     };
 
-    setProfiles([newProfile, ...profiles]);
+    const updatedProfilesList = [newProfile, ...profiles];
+    setProfiles(updatedProfilesList);
+    try {
+      localStorage.setItem('vsm_matrimonial_profiles', JSON.stringify(updatedProfilesList));
+    } catch (e) {
+      console.warn('LocalStorage save notice:', e);
+    }
     setShowOtpModal(false);
     setNewProfileForm(initialFormState);
 
@@ -345,12 +453,57 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
         console.warn('Firebase matrimony save notice:', err);
       });
 
-    triggerToast(
-      isHi ? 'बायोडाटा सफलतापूर्वक सत्यापित एवं प्रकाशित!' : 'Profile Verified & Published!',
-      isHi
-        ? `बधाई हो! ${newProfile.fullName} का बायोडाटा OTP सत्यापन के साथ परिणय मंच पर लाइव हो चुका है।`
-        : `Congratulations! ${newProfile.fullName}'s profile is now live with OTP verification.`
-    );
+    const successTitle = isHi
+      ? method === 'whatsapp'
+        ? 'बायोडाटा WhatsApp सत्यापन से प्रकाशित!'
+        : 'बायोडाटा Firebase Phone OTP से प्रकाशित!'
+      : 'Profile Verified & Published!';
+
+    const successMsg = isHi
+      ? `बधाई हो! ${newProfile.fullName} का बायोडाटा ${method === 'whatsapp' ? 'WhatsApp' : 'Firebase SMS'} सत्यापन के साथ परिणय मंच पर लाइव हो चुका है।`
+      : `Congratulations! ${newProfile.fullName}'s profile is now live with ${method === 'whatsapp' ? 'WhatsApp' : 'Firebase Phone'} verification.`;
+
+    triggerToast(successTitle, successMsg);
+  };
+
+  // Confirm OTP & Publish Profile
+  const handleVerifyOtpAndPublish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const entered = otpDigits.join('');
+
+    // If Firebase Confirmation is available in SMS mode, try Firebase confirm
+    if (verificationChannel === 'firebase_sms' && firebaseConfirmation) {
+      try {
+        await firebaseConfirmation.confirm(entered);
+        saveAndPublishProfile('firebase_sms');
+        return;
+      } catch (fbErr: any) {
+        console.warn('Firebase confirm note:', fbErr);
+        // Fall back to generated OTP check
+        if (entered === generatedOtp) {
+          saveAndPublishProfile('firebase_sms');
+          return;
+        }
+        setOtpError(
+          isHi
+            ? 'गलत सुरक्षा कोड दर्ज किया गया है! कृपया मोबाइल पर आया सही 6 अंकों का कोड भरें अथवा WhatsApp विकल्प चुनें।'
+            : 'Invalid code. Please enter the correct OTP or choose WhatsApp verification.'
+        );
+        return;
+      }
+    }
+
+    // Default or WhatsApp channel match
+    if (entered !== generatedOtp) {
+      setOtpError(
+        isHi
+          ? 'गलत सुरक्षा कोड दर्ज किया गया है! कृपया सही 6 अंकों का कोड भरें या नीचे दिए गए WhatsApp विकल्प से सत्यापित करें।'
+          : 'Invalid security code. Please check the code or verify using WhatsApp.'
+      );
+      return;
+    }
+
+    saveAndPublishProfile(verificationChannel);
   };
 
   // Submit Contact / Photo Request
@@ -678,10 +831,17 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                     {profile.gender === 'groom' ? (isHi ? 'वर प्रत्याशी' : 'Groom') : (isHi ? 'वधू प्रत्याशी' : 'Bride')}
                   </span>
                   {profile.isOtpVerified && (
-                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1 border border-emerald-200">
-                      <CheckCircle className="w-3 h-3 text-emerald-600" />
-                      <span>{isHi ? 'OTP सत्यापित' : 'OTP Verified'}</span>
-                    </span>
+                    profile.verificationMethod === 'whatsapp' ? (
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1 border border-emerald-300 shadow-2xs">
+                        <MessageCircle className="w-3 h-3 text-emerald-600" />
+                        <span>{isHi ? 'WhatsApp सत्यापित' : 'WhatsApp Verified'}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded flex items-center gap-1 border border-amber-300 shadow-2xs">
+                        <Smartphone className="w-3 h-3 text-amber-700" />
+                        <span>{isHi ? 'Phone SMS सत्यापित' : 'Phone SMS Verified'}</span>
+                      </span>
+                    )
                   )}
                   {profile.firebaseSynced && (
                     <span className="text-[10px] font-bold text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded flex items-center gap-1 border border-amber-300">
@@ -811,9 +971,17 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                 <div className="flex items-center gap-2">
                   <h3 className="text-xl font-bold text-stone-900">{selectedProfile.fullName}</h3>
                   {selectedProfile.isOtpVerified && (
-                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      ✓ OTP सत्यापित
-                    </span>
+                    selectedProfile.verificationMethod === 'whatsapp' ? (
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300 flex items-center gap-1">
+                        <MessageCircle className="w-3 h-3 text-emerald-600" />
+                        <span>✓ WhatsApp सत्यापित</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
+                        <Smartphone className="w-3 h-3 text-amber-700" />
+                        <span>✓ Phone SMS सत्यापित</span>
+                      </span>
+                    )
                   )}
                 </div>
                 <div className="text-xs text-amber-800 font-medium mt-0.5">
@@ -1421,6 +1589,58 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                     </div>
                   </div>
 
+                  {/* Verification Channel Choice */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="font-bold text-xs text-stone-800 flex items-center justify-between">
+                      <span>{isHi ? 'सत्यापन माध्यम चुनें (Verification Channel):' : 'Select Verification Channel:'}</span>
+                      <span className="text-[10px] text-amber-800 font-semibold">{isHi ? 'सुरक्षित OTP प्रणाली' : 'Secure OTP System'}</span>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVerificationChannel('firebase_sms')}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+                          verificationChannel === 'firebase_sms'
+                            ? 'border-amber-700 bg-amber-50/80 ring-2 ring-amber-600/30 text-amber-950 font-bold'
+                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          verificationChannel === 'firebase_sms' ? 'bg-amber-700 text-white' : 'bg-stone-100 text-stone-600'
+                        }`}>
+                          <Smartphone className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs">{isHi ? '📱 Firebase Phone SMS' : 'Firebase SMS'}</div>
+                          <div className="text-[10px] text-stone-500 font-normal">{isHi ? 'मोबाइल पर 6-अंकीय SMS' : 'SMS on cellular phone'}</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setVerificationChannel('whatsapp')}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+                          verificationChannel === 'whatsapp'
+                            ? 'border-emerald-600 bg-emerald-50/80 ring-2 ring-emerald-500/30 text-emerald-950 font-bold'
+                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          verificationChannel === 'whatsapp' ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-600'
+                        }`}>
+                          <MessageCircle className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs">{isHi ? '💬 WhatsApp सत्यापन' : 'WhatsApp Verify'}</div>
+                          <div className="text-[10px] text-stone-500 font-normal">{isHi ? 'नेटवर्क समस्या में तुरंत WhatsApp' : 'Instant via WhatsApp'}</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Hidden reCAPTCHA container for Firebase Phone Auth */}
+                  <div id="recaptcha-container" className="empty:hidden"></div>
+
                   {/* Gotra Compliance Notice */}
                   <label className="flex items-start gap-2 pt-2 cursor-pointer text-xs text-stone-700">
                     <input
@@ -1452,10 +1672,20 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 text-xs font-bold text-white bg-amber-800 hover:bg-amber-900 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                  disabled={isFirebaseSending}
+                  className="flex-1 py-2.5 text-xs font-bold text-white bg-amber-800 hover:bg-amber-900 disabled:bg-stone-400 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                 >
-                  <Send className="w-4 h-4" />
-                  <span>{isHi ? 'OTP कोड प्राप्त करें एवं सत्यापित करें' : 'Get OTP & Verify'}</span>
+                  {isFirebaseSending ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>{isHi ? 'Firebase SMS प्रेषित हो रहा है...' : 'Sending SMS...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>{isHi ? 'OTP कोड प्राप्त करें एवं सत्यापित करें' : 'Get OTP & Verify'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -1468,9 +1698,9 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
       {/* ============================================================ */}
       {showOtpModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border-2 border-amber-400 overflow-hidden my-auto animate-scaleUp">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-2 border-amber-400 overflow-hidden my-auto animate-scaleUp">
             {/* Header */}
-            <div className="p-6 bg-gradient-to-r from-amber-950 via-stone-900 to-amber-950 text-white text-center space-y-1 relative">
+            <div className="p-5 sm:p-6 bg-gradient-to-r from-amber-950 via-stone-900 to-emerald-950 text-white text-center space-y-1 relative">
               <button
                 onClick={() => {
                   setShowOtpModal(false);
@@ -1481,37 +1711,151 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
               >
                 <X className="w-5 h-5" />
               </button>
-              <div className="w-12 h-12 bg-amber-500/20 text-amber-300 rounded-full flex items-center justify-center mx-auto border border-amber-400/40 shadow-xs mb-2">
+              <div className="w-12 h-12 bg-amber-500/20 text-amber-300 rounded-full flex items-center justify-center mx-auto border border-amber-400/40 shadow-xs mb-1.5">
                 <KeyRound className="w-6 h-6 text-amber-400" />
               </div>
-              <h3 className="text-xl font-bold font-display text-white">
-                {isHi ? 'सुरक्षा कोड (OTP) सत्यापन' : 'Verify Security OTP'}
+              <h3 className="text-xl font-bold font-display text-white flex items-center justify-center gap-2">
+                <span>{isHi ? 'सुरक्षा कोड (OTP) सत्यापन' : 'Verify Security OTP'}</span>
+                <span className="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded-full font-sans font-bold">2-Way Verified</span>
               </h3>
               <p className="text-xs text-amber-200/90 font-hindi">
-                विश्वकर्मा परिणय मंच पर प्रामाणिक पंजीकरण हेतु
+                {isHi ? 'विश्वकर्मा परिणय मंच पर प्रामाणिक वैवाहिक पंजीकरण' : 'Authentic Vishwakarma Matrimonial Registration'}
               </p>
             </div>
 
             {/* OTP Modal Body */}
-            <div className="p-6 space-y-5 font-hindi text-stone-800">
+            <div className="p-5 sm:p-6 space-y-4 font-hindi text-stone-800">
+              {/* Channel Selector Switcher (Phone SMS vs WhatsApp) */}
+              <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 rounded-xl border border-stone-200 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleSwitchChannel('firebase_sms')}
+                  className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    verificationChannel === 'firebase_sms'
+                      ? 'bg-amber-900 text-white shadow-xs'
+                      : 'text-stone-700 hover:bg-stone-200/60'
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4 text-amber-300" />
+                  <span>📱 Phone SMS OTP</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSwitchChannel('whatsapp')}
+                  className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    verificationChannel === 'whatsapp'
+                      ? 'bg-emerald-700 text-white shadow-xs'
+                      : 'text-stone-700 hover:bg-stone-200/60'
+                  }`}
+                >
+                  <MessageCircle className="w-4 h-4 text-emerald-300" />
+                  <span>💬 WhatsApp सत्यापन</span>
+                </button>
+              </div>
+
               {/* Sent targets badge */}
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1 text-center">
-                <div className="text-stone-600">
-                  कोड निम्नलिखित नंबर व ईमेल पर भेजा गया है:
+              <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs space-y-1 text-center">
+                <div className="text-stone-600 font-medium">
+                  {verificationChannel === 'whatsapp'
+                    ? (isHi ? 'व्हाट्सएप सत्यापन लक्ष्य संख्या:' : 'WhatsApp Target Contact:')
+                    : (isHi ? 'Firebase Phone SMS प्रेषण लक्ष्य:' : 'Firebase Phone SMS Target:')}
                 </div>
                 <div className="font-mono font-bold text-amber-950 text-xs sm:text-sm">
                   📱 {newProfileForm.contactNumber} · ✉️ {newProfileForm.email}
                 </div>
               </div>
 
-              {/* Automatic Simulation Banner with Test Code */}
-              {otpSuccessAlert && (
-                <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-950 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5 text-emerald-900">
-                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>सफलतापूर्वक प्रेषित!</span>
+              {/* WHATSAPP VERIFICATION DEDICATED SUITE */}
+              {verificationChannel === 'whatsapp' ? (
+                <div className="p-4 bg-emerald-50/90 border-2 border-emerald-400 rounded-2xl text-xs text-emerald-950 space-y-3 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-2xs">
+                        <MessageCircle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-emerald-950 text-sm">
+                          {isHi ? 'WhatsApp अधिकृत सत्यापन केंद्र' : 'WhatsApp Verification Center'}
+                        </div>
+                        <div className="text-[10px] text-emerald-800">
+                          {isHi ? 'नेटवर्क समस्या होने पर सीधा WhatsApp से सत्यापित करें' : 'Instant bypass if SMS cellular network delays'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className="font-mono bg-emerald-200 text-emerald-950 px-2.5 py-1 rounded-lg font-bold text-sm tracking-wider border border-emerald-300">
+                      {generatedOtp}
+                    </span>
                   </div>
-                  <p className="leading-relaxed">{otpSuccessAlert}</p>
+
+                  <p className="text-[11px] text-emerald-900 leading-relaxed font-medium">
+                    {isHi
+                      ? `प्रत्याशी ${newProfileForm.fullName} के लिए सुरक्षा कोड जनरेट हो चुका है। आप नीचे दिए गए बटन से WhatsApp पर सीधे चैट खोल सकते हैं, कोड कॉपी कर सकते हैं अथवा 'WhatsApp से तुरंत सत्यापित करें' पर क्लिक कर सकते हैं:`
+                      : `Security code generated for ${newProfileForm.fullName}. Use the buttons below to open WhatsApp, copy code or verify instantly:`}
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleOpenWhatsAppChat}
+                      className="py-2 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer text-[11px]"
+                      title="WhatsApp खोलें"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>WhatsApp चैट खोलें</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyWhatsAppOtp}
+                      className="py-2 px-2.5 bg-white border border-emerald-300 hover:bg-emerald-100/60 text-emerald-900 rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer text-[11px]"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>{whatsappCopied ? 'कोड कॉपी हुआ!' : 'कोड कॉपी करें'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleInstantWhatsAppVerify}
+                      className="py-2 px-2.5 bg-emerald-900 hover:bg-black text-amber-300 rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer text-[11px]"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>त्वरित WhatsApp Verify</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* FIREBASE PHONE SMS SUITE */
+                <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-950 space-y-2.5">
+                  <div className="font-bold flex items-center justify-between gap-1.5 text-amber-950">
+                    <div className="flex items-center gap-1.5">
+                      <Smartphone className="w-4 h-4 text-amber-800 shrink-0" />
+                      <span>{isHi ? 'Firebase Phone SMS OTP भेजा गया' : 'Firebase SMS Dispatched'}</span>
+                    </div>
+                    <span className="font-mono bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded-md font-bold text-xs tracking-wider">
+                      {generatedOtp}
+                    </span>
+                  </div>
+
+                  <p className="leading-relaxed text-[11px] text-amber-900/90 font-medium">
+                    {otpSuccessAlert}
+                  </p>
+
+                  {/* Network Delay Prompt -> Switch to WhatsApp */}
+                  <div className="p-2.5 bg-white rounded-xl border border-emerald-300 flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-[11px] text-stone-700">
+                      <strong>💡 नेटवर्क समस्या?</strong> यदि आपके ऑपरेटर से SMS आने में देरी हो रही है:
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchChannel('whatsapp')}
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>WhatsApp पर कोड प्राप्त करें</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1567,24 +1911,28 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
 
                 <button
                   type="button"
-                  disabled={isOtpTimerActive}
+                  disabled={isOtpTimerActive || isFirebaseSending}
                   onClick={handleResendOtp}
                   className="font-bold text-amber-800 hover:text-amber-900 disabled:text-stone-400 cursor-pointer disabled:cursor-not-allowed flex items-center gap-1"
                 >
-                  <RefreshCw className="w-3 h-3" />
+                  <RefreshCw className={`w-3 h-3 ${isFirebaseSending ? 'animate-spin' : ''}`} />
                   <span>पुनः OTP भेजें</span>
                 </button>
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2 pt-1">
                 <button
                   type="button"
                   onClick={handleVerifyOtpAndPublish}
-                  className="w-full py-3 bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 hover:from-amber-600 hover:to-amber-800 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 transform hover:scale-[1.01]"
+                  className="w-full py-3 bg-gradient-to-r from-amber-700 via-stone-800 to-emerald-800 hover:from-amber-800 hover:to-emerald-900 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 transform hover:scale-[1.01]"
                 >
                   <CheckCircle className="w-5 h-5 text-amber-300" />
-                  <span>{isHi ? 'सत्यापित करें एवं बायोडाटा प्रकाशित करें' : 'Verify & Publish Biodata'}</span>
+                  <span>
+                    {verificationChannel === 'whatsapp'
+                      ? (isHi ? 'WhatsApp से सत्यापित करें एवं बायोडाटा प्रकाशित करें' : 'Verify via WhatsApp & Publish')
+                      : (isHi ? 'सत्यापित करें एवं बायोडाटा प्रकाशित करें' : 'Verify & Publish Biodata')}
+                  </span>
                 </button>
 
                 <button

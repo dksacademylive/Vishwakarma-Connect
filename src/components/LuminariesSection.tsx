@@ -24,12 +24,16 @@ interface LuminariesSectionProps {
   luminaries: HallOfFamePerson[];
   onAddLuminary: (luminary: HallOfFamePerson) => void;
   lang: Language;
+  isAdminLoggedIn?: boolean;
+  onOpenAdmin?: () => void;
 }
 
 export const LuminariesSection: React.FC<LuminariesSectionProps> = ({
   luminaries,
   onAddLuminary,
   lang,
+  isAdminLoggedIn = false,
+  onOpenAdmin,
 }) => {
   const isHi = lang === 'hi';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -190,13 +194,23 @@ export const LuminariesSection: React.FC<LuminariesSectionProps> = ({
             </p>
           </div>
 
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-stone-950 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all transform hover:scale-[1.02] shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>नई विभूति / अमर शिल्पी जोड़ें</span>
-          </button>
+          {/* Add Luminary Button - ONLY VISIBLE ON ADMIN LOGIN (Hidden in public view per user request) */}
+          {isAdminLoggedIn ? (
+            <button
+              onClick={() => {
+                if (onOpenAdmin) {
+                  onOpenAdmin();
+                } else {
+                  setIsAddModalOpen(true);
+                }
+              }}
+              className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-stone-950 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all transform hover:scale-[1.02] shrink-0"
+              title="व्यवस्थापक नियंत्रण: नई विभूति / अमर शिल्पी जोड़ें"
+            >
+              <Plus className="w-4 h-4" />
+              <span>नई विभूति / अमर शिल्पी जोड़ें (Admin)</span>
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -301,7 +315,7 @@ export const LuminariesSection: React.FC<LuminariesSectionProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="pt-3 border-t border-amber-200/80 flex items-center justify-between">
+            <div className="pt-3 border-t border-amber-200/80 flex items-center justify-between gap-2">
               <button
                 onClick={() => handleShare(person)}
                 className="text-xs text-stone-600 hover:text-stone-900 flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -310,13 +324,25 @@ export const LuminariesSection: React.FC<LuminariesSectionProps> = ({
                 <span>{copiedId === person.id ? 'कॉपी हो गया!' : 'शेयर'}</span>
               </button>
 
-              <button
-                onClick={() => setSelectedLuminaryDetail(person)}
-                className="text-xs font-bold text-amber-800 hover:text-amber-900 flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <span>अधिक जानकारी / विवरण</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                {isAdminLoggedIn && onOpenAdmin && (
+                  <button
+                    onClick={onOpenAdmin}
+                    className="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                    title="एडमिन पैनल में संपादित करें"
+                  >
+                    <span>✏️ संपादन (Admin)</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setSelectedLuminaryDetail(person)}
+                  className="text-xs font-bold text-amber-800 hover:text-amber-900 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <span>अधिक जानकारी</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         ))}

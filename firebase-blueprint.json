@@ -72,6 +72,45 @@
         "status": { "type": "string", "enum": ["approved", "pending", "rejected"] }
       },
       "required": ["id", "name", "gender", "age", "education", "city", "subcaste"]
+    },
+    "siteConfig": {
+      "title": "SiteConfig",
+      "description": "Global website settings synchronized in real-time across all public visitors",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "data": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["key"]
+    },
+    "eventItem": {
+      "title": "EventItem",
+      "description": "Community events and conventions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "venue": { "type": "string" },
+        "city": { "type": "string" },
+        "category": { "type": "string" },
+        "attendeesCount": { "type": "number" }
+      },
+      "required": ["id", "title", "date", "venue", "city"]
+    },
+    "luminaryItem": {
+      "title": "LuminaryItem",
+      "description": "Amar Shilpi & historical luminaries of Vishwakarma lineage",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "era": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "name", "title", "era"]
     }
   },
   "firestore": {
@@ -90,6 +129,18 @@
     "/matrimony/{profileId}": {
       "schema": "matrimonyProfile",
       "description": "Matrimony candidate profiles"
+    },
+    "/site_config/{configDocId}": {
+      "schema": "siteConfig",
+      "description": "Synchronized administrative settings and organization details"
+    },
+    "/events/{eventId}": {
+      "schema": "eventItem",
+      "description": "Community events and mahotsav registry"
+    },
+    "/luminaries/{luminaryId}": {
+      "schema": "luminaryItem",
+      "description": "Community luminaries and hall of fame artisans"
     }
   }
 }

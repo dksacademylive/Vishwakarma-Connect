@@ -32,12 +32,16 @@ interface EventsSectionProps {
   events: SamajEvent[];
   onAddEvent: (newEvent: SamajEvent) => void;
   lang: Language;
+  isAdminLoggedIn?: boolean;
+  onOpenAdmin?: () => void;
 }
 
 export const EventsSection: React.FC<EventsSectionProps> = ({
   events,
   onAddEvent,
   lang,
+  isAdminLoggedIn = false,
+  onOpenAdmin,
 }) => {
   const isHi = lang === 'hi';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -258,13 +262,23 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             </p>
           </div>
 
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-stone-950 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all transform hover:scale-[1.02] shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{isHi ? 'नया समाज आयोजन जोड़ें' : 'Add New Event'}</span>
-          </button>
+          {/* Add New Event Button - ONLY VISIBLE ON ADMIN LOGIN (Hidden in public view per user request) */}
+          {isAdminLoggedIn ? (
+            <button
+              onClick={() => {
+                if (onOpenAdmin) {
+                  onOpenAdmin();
+                } else {
+                  setIsCreateModalOpen(true);
+                }
+              }}
+              className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-stone-950 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all transform hover:scale-[1.02] shrink-0"
+              title="व्यवस्थापक नियंत्रण: नया समाज आयोजन जोड़ें"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isHi ? 'नया समाज आयोजन जोड़ें (Admin)' : 'Add New Event (Admin)'}</span>
+            </button>
+          ) : null}
         </div>
       </div>
 

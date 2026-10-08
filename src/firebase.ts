@@ -1,8 +1,14 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import {
+  getAuth,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  type ConfirmationResult
+} from 'firebase/auth';
 import {
   getFirestore,
   doc,
+  getDoc,
   getDocFromServer,
   collection,
   addDoc,
@@ -13,7 +19,8 @@ import {
   orderBy,
   limit,
   serverTimestamp,
-  setDoc
+  setDoc,
+  onSnapshot
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -162,6 +169,7 @@ export interface StoredMatrimonialProfile {
   email?: string;
   verified?: boolean;
   isOtpVerified?: boolean;
+  verificationMethod?: 'firebase_sms' | 'whatsapp' | 'manual';
   photoPrivacy?: 'public' | 'blur_request' | 'members_only' | 'private';
   contactPrivacy?: 'public' | 'on_request' | 'guardian_only';
   firebaseSynced?: boolean;
@@ -216,14 +224,155 @@ export async function fetchMatrimonialProfilesFromFirestore(): Promise<StoredMat
         email: data.email || '',
         verified: data.verified ?? true,
         isOtpVerified: data.isOtpVerified ?? true,
+        verificationMethod: data.verificationMethod || 'firebase_sms',
         photoPrivacy: data.photoPrivacy || 'public',
         contactPrivacy: data.contactPrivacy || 'public',
+        profileVisibility: data.profileVisibility || 'active',
         firebaseSynced: true,
       };
     }) as StoredMatrimonialProfile[];
   } catch (err) {
     console.error('Error fetching matrimony profiles from Firestore:', err);
     return [];
+  }
+}
+
+export async function deleteMatrimonialProfileFromFirestore(id: string) {
+  try {
+    const docRef = doc(db, 'matrimony', id);
+    await deleteDoc(docRef);
+    return true;
+  } catch (err) {
+    console.error('Error deleting matrimonial profile from Firestore:', err);
+    return false;
+  }
+}
+
+export async function updateMatrimonialProfileVisibilityInFirestore(
+  id: string,
+  profileVisibility: 'active' | 'hidden'
+) {
+  try {
+    const docRef = doc(db, 'matrimony', id);
+    await updateDoc(docRef, { profileVisibility });
+    return true;
+  } catch (err) {
+    console.error('Error updating profile visibility in Firestore:', err);
+    return false;
+  }
+}
+
+// ==========================================
+// 4. FIREBASE PHONE AUTH SERVICE (Phone SMS OTP)
+// ==========================================
+export function setupRecaptcha(containerId: string): RecaptchaVerifier {
+  if (typeof window !== 'undefined' && (window as any).recaptchaVerifier) {
+    try {
+      (window as any).recaptchaVerifier.clear();
+    } catch {
+      // ignore
+    }
+  }
+
+  const verifier = new RecaptchaVerifier(auth, containerId, {
+    size: 'invisible',
+    callback: () => {
+      console.log('Firebase Phone Auth reCAPTCHA verified');
+    },
+    'expired-callback': () => {
+      console.warn('Firebase Phone Auth reCAPTCHA expired, renewing...');
+    }
+  });
+
+  if (typeof window !== 'undefined') {
+    (window as any).recaptchaVerifier = verifier;
+  }
+
+  return verifier;
+}
+
+export async function sendFirebasePhoneOtp(
+  phoneNumber: string,
+  appVerifier: RecaptchaVerifier
+): Promise<ConfirmationResult> {
+  let cleanNumber = phoneNumber.replace(/[^0-9+]/g, '');
+  if (!cleanNumber.startsWith('+')) {
+    if (cleanNumber.length === 10) {
+      cleanNumber = `+91${cleanNumber}`;
+    } else if (cleanNumber.length === 12 && cleanNumber.startsWith('91')) {
+      cleanNumber = `+${cleanNumber}`;
+    } else {
+      cleanNumber = `+91${cleanNumber}`;
+    }
+  }
+  return await signInWithPhoneNumber(auth, cleanNumber, appVerifier);
+}
+
+// ==========================================
+// 5. GLOBAL SITE CONFIG & CONTENT SYNC (Firebase Firestore Real-time Sync)
+// Allows Super Admin changes to instantly reflect across all public links and devices
+// ==========================================
+
+export async function saveSiteConfigToFirestore(configKey: string, data: any) {
+  try {
+    const docRef = doc(db, 'site_config', configKey);
+    await setDoc(docRef, {
+      key: configKey,
+      data: JSON.stringify(data),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn(`Firestore site_config write failed for ${configKey}:`, err);
+    return false;
+  }
+}
+
+export async function fetchSiteConfigFromFirestore<T>(configKey: string): Promise<T | null> {
+  try {
+    const docRef = doc(db, 'site_config', configKey);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const snapData = docSnap.data();
+      if (snapData?.data) {
+        return JSON.parse(snapData.data) as T;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn(`Firestore site_config read failed for ${configKey}:`, err);
+    return null;
+  }
+}
+
+export function subscribeSiteConfigFromFirestore<T>(
+  configKey: string,
+  onUpdate: (data: T) => void
+): () => void {
+  try {
+    const docRef = doc(db, 'site_config', configKey);
+    return onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const snapData = docSnap.data();
+          if (snapData?.data) {
+            try {
+              const parsed = JSON.parse(snapData.data) as T;
+              onUpdate(parsed);
+            } catch (e) {
+              console.warn(`JSON parse error for Firestore config ${configKey}:`, e);
+            }
+          }
+        }
+      },
+      (error) => {
+        console.warn(`Firestore onSnapshot listener error for ${configKey}:`, error);
+      }
+    );
+  } catch (err) {
+    console.warn(`Failed to attach Firestore listener for ${configKey}:`, err);
+    return () => {};
   }
 }
 

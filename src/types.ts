@@ -71,6 +71,7 @@ export interface MatrimonialProfile {
   email?: string;
   verified?: boolean;
   isOtpVerified?: boolean;
+  verificationMethod?: 'firebase_sms' | 'whatsapp' | 'manual';
   photoPrivacy?: 'public' | 'blur_request' | 'members_only';
   contactPrivacy?: 'public' | 'on_request' | 'guardian_only';
   profileVisibility?: 'active' | 'hidden';

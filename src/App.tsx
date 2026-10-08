@@ -39,7 +39,7 @@ import { YouthAndJobs } from './components/YouthAndJobs';
 import { IdCardGenerator } from './components/IdCardGenerator';
 import { CreatePostModal } from './components/CreatePostModal';
 import { DonationModal } from './components/DonationModal';
-import { AdminPanelModal } from './components/AdminPanelModal';
+import { AdminPanelModal, type AdminTab } from './components/AdminPanelModal';
 import { Footer } from './components/Footer';
 
 export default function App() {
@@ -55,11 +55,18 @@ export default function App() {
       return UPCOMING_EVENTS;
     }
   });
-  const [luminaries, setLuminaries] = useState<HallOfFamePerson[]>(HALL_OF_FAME_DATA);
+  const [luminaries, setLuminaries] = useState<HallOfFamePerson[]>(() => {
+    try {
+      const saved = localStorage.getItem('vsm_luminaries');
+      return saved ? JSON.parse(saved) : HALL_OF_FAME_DATA;
+    } catch {
+      return HALL_OF_FAME_DATA;
+    }
+  });
   const [isCreatePostOpen, setIsCreatePostOpen] = useState<boolean>(false);
   const [isDonateOpen, setIsDonateOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
-  const [adminInitialTab, setAdminInitialTab] = useState<'applications' | 'president' | 'team' | 'office' | 'social' | 'donation' | 'schemes' | 'events' | 'security'>('applications');
+  const [adminInitialTab, setAdminInitialTab] = useState<AdminTab>('applications');
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     try {
       return localStorage.getItem('vsm_admin_logged_in') === 'true';
@@ -275,7 +282,24 @@ export default function App() {
 
   // Add a new luminary / amar shilpi
   const handleAddLuminary = (newLuminary: HallOfFamePerson) => {
-    setLuminaries((prev) => [newLuminary, ...prev]);
+    setLuminaries((prev) => {
+      const updated = [newLuminary, ...prev];
+      try {
+        localStorage.setItem('vsm_luminaries', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+  };
+
+  const handleUpdateLuminaries = (newList: HallOfFamePerson[]) => {
+    setLuminaries(newList);
+    try {
+      localStorage.setItem('vsm_luminaries', JSON.stringify(newList));
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   return (
@@ -390,6 +414,11 @@ export default function App() {
             luminaries={luminaries}
             onAddLuminary={handleAddLuminary}
             lang={lang}
+            isAdminLoggedIn={isAdminLoggedIn}
+            onOpenAdmin={() => {
+              setAdminInitialTab('luminaries');
+              setIsAdminOpen(true);
+            }}
           />
         )}
 
@@ -468,6 +497,8 @@ export default function App() {
         onUpdateArtisanConfig={(cfg) => setArtisanConfig(cfg)}
         postConfig={postConfig}
         onUpdatePostConfig={(cfg) => setPostConfig(cfg)}
+        luminaries={luminaries}
+        onUpdateLuminaries={handleUpdateLuminaries}
         lang={lang}
         isAuthenticated={isAdminLoggedIn}
         onLoginSuccess={handleAdminLoginSuccess}
