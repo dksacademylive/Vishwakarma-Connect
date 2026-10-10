@@ -212,6 +212,13 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
     // Save automatically to Firebase Firestore
     addApplicationToFirestore(appData);
 
+    // Save locally to ensure submitted form details are NEVER lost on update or refresh
+    try {
+      const existing = JSON.parse(localStorage.getItem('vsm_applications') || '[]');
+      const filtered = existing.filter((a: any) => a.regNumber !== appData.regNumber);
+      localStorage.setItem('vsm_applications', JSON.stringify([appData, ...filtered]));
+    } catch {}
+
     setConfirmationData({
       ...appData,
       subtitle: `${selectedJob.company} · ${selectedJob.location} (${selectedJob.salary})`,
@@ -263,6 +270,13 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
     // Save automatically to Firebase Firestore
     addApplicationToFirestore(appData);
 
+    // Save locally to ensure submitted form details are NEVER lost on update or refresh
+    try {
+      const existing = JSON.parse(localStorage.getItem('vsm_applications') || '[]');
+      const filtered = existing.filter((a: any) => a.regNumber !== appData.regNumber);
+      localStorage.setItem('vsm_applications', JSON.stringify([appData, ...filtered]));
+    } catch {}
+
     setConfirmationData({
       ...appData,
       subtitle: `सहायता राशि: ${selectedScholarship.amount}`,
@@ -312,6 +326,13 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
 
     // Save automatically to Firebase Firestore
     addApplicationToFirestore(appData);
+
+    // Save locally to ensure submitted form details are NEVER lost on update or refresh
+    try {
+      const existing = JSON.parse(localStorage.getItem('vsm_applications') || '[]');
+      const filtered = existing.filter((a: any) => a.regNumber !== appData.regNumber);
+      localStorage.setItem('vsm_applications', JSON.stringify([appData, ...filtered]));
+    } catch {}
 
     setConfirmationData({
       ...appData,

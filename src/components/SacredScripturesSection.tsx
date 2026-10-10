@@ -19,8 +19,11 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Book,
-  Check
+  Check,
+  Mail
 } from 'lucide-react';
+import { checkMembershipEmailExists, addMembershipToFirestore } from '../firebase';
+import { AlreadyRegisteredModal } from './AlreadyRegisteredModal';
 
 interface SacredScripturesSectionProps {
   lang: Language;
@@ -88,6 +91,17 @@ export const SacredScripturesSection: React.FC<SacredScripturesSectionProps> = (
     photoDataUrl: '',
     photoFileName: '',
     acceptedTerms: true,
+  });
+
+  // Already Registered Popup Modal State (1 Email = 1 Membership Rule)
+  const [alreadyRegisteredModalData, setAlreadyRegisteredModalData] = useState<{
+    isOpen: boolean;
+    email: string;
+    name?: string;
+    id?: string;
+  }>({
+    isOpen: false,
+    email: '',
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -158,6 +172,28 @@ export const SacredScripturesSection: React.FC<SacredScripturesSectionProps> = (
     e.preventDefault();
     if (!memberForm.fullName || !memberForm.mobile || !scriptureToDownload) return;
 
+    const cleanEmail = (memberForm.email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      alert(isHi ? 'कृपया समाज सदस्यता पंजीकरण हेतु ईमेल पता भरें।' : 'Please enter email address for membership registration.');
+      return;
+    }
+
+    // 1-TIME REGISTRATION POLICY: Check duplicate email
+    try {
+      const checkRes = await checkMembershipEmailExists(cleanEmail);
+      if (checkRes.exists) {
+        setAlreadyRegisteredModalData({
+          isOpen: true,
+          email: cleanEmail,
+          name: checkRes.member?.fullName,
+          id: checkRes.member?.membershipId,
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn('Membership email verification warning:', err);
+    }
+
     setIsGeneratingPdf(true);
 
     const memberId = `VK-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
@@ -168,6 +204,19 @@ export const SacredScripturesSection: React.FC<SacredScripturesSectionProps> = (
       : memberForm.city;
 
     try {
+      // Record / Save Membership to Cloud & Local
+      addMembershipToFirestore({
+        membershipId: memberId,
+        fullName: memberForm.fullName,
+        email: cleanEmail,
+        mobile: memberForm.mobile,
+        subcaste: memberForm.subcaste,
+        gotra: memberForm.gotra,
+        city: finalDistrictName,
+        state: memberForm.state,
+        createdAt: new Date().toISOString()
+      });
+
       // Create high-res A4 canvas (1240 x 1754 px @ 150 DPI)
       const canvas = document.createElement('canvas');
       const width = 1240;
@@ -868,8 +917,8 @@ export const SacredScripturesSection: React.FC<SacredScripturesSectionProps> = (
                     </div>
                   </div>
 
-                  {/* Gotra & Mobile */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Gotra, Mobile & Email */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-medium text-stone-700 block mb-1">
                         {isHi ? 'स्वगोत्र' : 'Gotra'}
@@ -893,6 +942,20 @@ export const SacredScripturesSection: React.FC<SacredScripturesSectionProps> = (
                         onChange={(e) => setMemberForm({ ...memberForm, mobile: e.target.value })}
                         placeholder="+91 98290 00000"
                         className="w-full px-3 py-2 border border-stone-200 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-stone-700 block mb-1 flex items-center justify-between">
+                        <span>{isHi ? 'ईमेल पता *' : 'Email *'}</span>
+                        <span className="text-[10px] text-amber-800 font-bold">1 ईमेल = 1 सदस्यता</span>
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={memberForm.email}
+                        onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
+                        placeholder="name@example.com"
+                        className="w-full px-3 py-2 border border-stone-200 rounded-lg text-xs font-medium"
                       />
                     </div>
                   </div>
@@ -1226,6 +1289,19 @@ export const SacredScripturesSection: React.FC<SacredScripturesSectionProps> = (
           </div>
         </div>
       )}
+
+      {/* Already Registered Modal (1 Email = 1 Membership Rule) */}
+      <AlreadyRegisteredModal
+        isOpen={alreadyRegisteredModalData.isOpen}
+        onClose={() => setAlreadyRegisteredModalData({ ...alreadyRegisteredModalData, isOpen: false })}
+        email={alreadyRegisteredModalData.email}
+        type="membership"
+        lang={lang}
+        details={{
+          name: alreadyRegisteredModalData.name,
+          id: alreadyRegisteredModalData.id,
+        }}
+      />
     </div>
   );
 };

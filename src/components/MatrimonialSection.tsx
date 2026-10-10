@@ -7,8 +7,10 @@ import {
   fetchMatrimonialProfilesFromFirestore,
   setupRecaptcha,
   sendFirebasePhoneOtp,
+  checkMatrimonyEmailExists,
   StoredMatrimonialProfile
 } from '../firebase';
+import { AlreadyRegisteredModal } from './AlreadyRegisteredModal';
 import type { ConfirmationResult } from 'firebase/auth';
 import {
   Heart,
@@ -171,6 +173,17 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
     }, 6000);
   };
 
+  // Popup Modal for Already Registered Email (Single Registration Enforcement)
+  const [alreadyRegisteredModalData, setAlreadyRegisteredModalData] = useState<{
+    isOpen: boolean;
+    email: string;
+    name?: string;
+    id?: string;
+  }>({
+    isOpen: false,
+    email: '',
+  });
+
   // OTP Timer Countdown
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -273,6 +286,36 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
     if (!newProfileForm.email.trim()) {
       alert(isHi ? 'कृपया सत्यापन हेतु ईमेल दर्ज करें।' : 'Please enter email address for verification.');
       return;
+    }
+
+    // 1-TIME REGISTRATION POLICY: Check if this email is already registered
+    const cleanEmail = newProfileForm.email.trim().toLowerCase();
+    const existingInState = profiles.find(
+      (p) => p.email && p.email.trim().toLowerCase() === cleanEmail
+    );
+    if (existingInState) {
+      setAlreadyRegisteredModalData({
+        isOpen: true,
+        email: cleanEmail,
+        name: existingInState.fullName,
+        id: existingInState.id,
+      });
+      return;
+    }
+
+    try {
+      const emailCheck = await checkMatrimonyEmailExists(cleanEmail);
+      if (emailCheck.exists) {
+        setAlreadyRegisteredModalData({
+          isOpen: true,
+          email: cleanEmail,
+          name: emailCheck.profile?.fullName || emailCheck.profile?.name,
+          id: emailCheck.profile?.id,
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn('Email duplicate verification warning:', err);
     }
 
     // Generate random 6-digit OTP
@@ -424,7 +467,7 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
       familyDetails: newProfileForm.familyDetails || 'प्रतिष्ठित एवं सुशिक्षित विश्वकर्मा परिवार।',
       contactPerson: newProfileForm.contactPerson || 'अभिभावक',
       contactNumber: newProfileForm.contactNumber,
-      email: newProfileForm.email,
+      email: newProfileForm.email.trim().toLowerCase(),
       verified: true,
       isOtpVerified: true,
       verificationMethod: method,
@@ -436,6 +479,12 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
     setProfiles(updatedProfilesList);
     try {
       localStorage.setItem('vsm_matrimonial_profiles', JSON.stringify(updatedProfilesList));
+      const registeredList: string[] = JSON.parse(localStorage.getItem('vsm_registered_matrimony_emails') || '[]');
+      const cleanEmail = (newProfile.email || '').toLowerCase();
+      if (cleanEmail && !registeredList.includes(cleanEmail)) {
+        registeredList.push(cleanEmail);
+        localStorage.setItem('vsm_registered_matrimony_emails', JSON.stringify(registeredList));
+      }
     } catch (e) {
       console.warn('LocalStorage save notice:', e);
     }
@@ -2073,6 +2122,19 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
           </div>
         </div>
       )}
+
+      {/* Already Registered Modal (1 Email = 1 Registration Enforcement) */}
+      <AlreadyRegisteredModal
+        isOpen={alreadyRegisteredModalData.isOpen}
+        onClose={() => setAlreadyRegisteredModalData({ ...alreadyRegisteredModalData, isOpen: false })}
+        email={alreadyRegisteredModalData.email}
+        type="parinay"
+        lang={lang}
+        details={{
+          name: alreadyRegisteredModalData.name,
+          id: alreadyRegisteredModalData.id,
+        }}
+      />
     </div>
   );
 };

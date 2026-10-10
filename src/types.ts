@@ -166,6 +166,7 @@ export interface SamajIdCardData {
   bloodGroup: string;
   dob: string;
   mobile: string;
+  email: string;
   city: string;
   state: string;
   membershipId: string;

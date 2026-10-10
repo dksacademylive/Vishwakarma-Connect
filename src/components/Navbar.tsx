@@ -209,17 +209,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Secondary navigation strip (Mobile & Tablet < 1280px) - Smooth horizontal scroll, zero cut-off */}
           <div className="xl:hidden flex items-center gap-1.5 py-2 overflow-x-auto text-xs font-medium text-stone-600 border-t border-stone-100 scrollbar-none px-0.5">
-            {/* Mobile prominent Sahyog / Dan button right in secondary navigation bar */}
-            <button
-              type="button"
-              onClick={onOpenDonate}
-              className="whitespace-nowrap px-3 py-1 rounded-lg shrink-0 font-bold bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 text-white shadow-2xs flex items-center gap-1 active:scale-95 transition-transform"
-              title={isHi ? 'विश्वकर्मा सहायता कोष में सहयोग / दान करें' : 'Donate'}
-            >
-              <Heart className="w-3 h-3 text-white fill-white" />
-              <span>{isHi ? 'सहयोग / दान' : 'Donate'}</span>
-            </button>
-
             <button
               onClick={() => setActiveTab('home')}
               className={`whitespace-nowrap px-2.5 py-1 rounded-lg shrink-0 transition-colors ${

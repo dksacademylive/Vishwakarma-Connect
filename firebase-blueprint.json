@@ -111,6 +111,21 @@
         "category": { "type": "string" }
       },
       "required": ["id", "name", "title", "era"]
+    },
+    "membershipRecord": {
+      "title": "MembershipRecord",
+      "description": "Official community membership registration records with unique email verification",
+      "type": "object",
+      "properties": {
+        "membershipId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "mobile": { "type": "string" },
+        "subcaste": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" }
+      },
+      "required": ["membershipId", "fullName", "email"]
     }
   },
   "firestore": {
@@ -141,6 +156,10 @@
     "/luminaries/{luminaryId}": {
       "schema": "luminaryItem",
       "description": "Community luminaries and hall of fame artisans"
+    },
+    "/memberships/{membershipId}": {
+      "schema": "membershipRecord",
+      "description": "Registered community memberships with unique email validation"
     }
   }
 }

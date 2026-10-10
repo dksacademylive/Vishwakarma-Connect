@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   NavTab,
   Language,
@@ -15,6 +15,10 @@ import {
   ArtisanFormConfig,
   PostFormConfig
 } from './types';
+import {
+  subscribeSiteConfigFromFirestore,
+  saveSiteConfigToFirestore
+} from './firebase';
 import { INITIAL_POSTS, ARTISANS_DATA, UPCOMING_EVENTS } from './data/mockData';
 import { HALL_OF_FAME_DATA, HallOfFamePerson, FOUNDER_DATA, TEAM_MEMBERS, FounderInfo, TeamMember } from './data/homeData';
 import {
@@ -225,6 +229,116 @@ export default function App() {
     }
   });
 
+  // REAL-TIME FIRESTORE SYNCHRONIZATION (Global Live Sync Across Public Devices & Links)
+  useEffect(() => {
+    const unsubEvents = subscribeSiteConfigFromFirestore<SamajEvent[]>('events', (data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setEvents(data);
+        localStorage.setItem('vsm_events', JSON.stringify(data));
+      }
+    });
+
+    const unsubLuminaries = subscribeSiteConfigFromFirestore<HallOfFamePerson[]>('luminaries', (data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setLuminaries(data);
+        localStorage.setItem('vsm_luminaries', JSON.stringify(data));
+      }
+    });
+
+    const unsubFounder = subscribeSiteConfigFromFirestore<FounderInfo>('founder', (data) => {
+      if (data && data.name) {
+        setFounderData(data);
+        localStorage.setItem('vsm_founder', JSON.stringify(data));
+      }
+    });
+
+    const unsubTeam = subscribeSiteConfigFromFirestore<TeamMember[]>('team', (data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setTeamMembers(data);
+        localStorage.setItem('vsm_team', JSON.stringify(data));
+      }
+    });
+
+    const unsubContact = subscribeSiteConfigFromFirestore<OrgContactInfo>('contact', (data) => {
+      if (data && data.address) {
+        setOrgContact(data);
+        localStorage.setItem('vsm_contact', JSON.stringify(data));
+      }
+    });
+
+    const unsubDonation = subscribeSiteConfigFromFirestore<DonationConfig>('donation', (data) => {
+      if (data && data.upiId) {
+        setDonationConfig(data);
+        localStorage.setItem('vsm_donation', JSON.stringify(data));
+      }
+    });
+
+    const unsubJobs = subscribeSiteConfigFromFirestore<JobItem[]>('jobs', (data) => {
+      if (Array.isArray(data)) {
+        setJobs(data);
+        localStorage.setItem('vsm_jobs', JSON.stringify(data));
+      }
+    });
+
+    const unsubScholarships = subscribeSiteConfigFromFirestore<ScholarshipItem[]>('scholarships', (data) => {
+      if (Array.isArray(data)) {
+        setScholarships(data);
+        localStorage.setItem('vsm_scholarships', JSON.stringify(data));
+      }
+    });
+
+    const unsubWorkshops = subscribeSiteConfigFromFirestore<WorkshopItem[]>('workshops', (data) => {
+      if (Array.isArray(data)) {
+        setWorkshops(data);
+        localStorage.setItem('vsm_workshops', JSON.stringify(data));
+      }
+    });
+
+    const unsubIdCard = subscribeSiteConfigFromFirestore<IdCardFormConfig>('idcard_config', (data) => {
+      if (data) {
+        setIdCardConfig(data);
+        localStorage.setItem('vsm_idcard_config', JSON.stringify(data));
+      }
+    });
+
+    const unsubMatrimony = subscribeSiteConfigFromFirestore<MatrimonyFormConfig>('matrimony_config', (data) => {
+      if (data) {
+        setMatrimonyConfig(data);
+        localStorage.setItem('vsm_matrimony_config', JSON.stringify(data));
+      }
+    });
+
+    const unsubArtisan = subscribeSiteConfigFromFirestore<ArtisanFormConfig>('artisan_config', (data) => {
+      if (data) {
+        setArtisanConfig(data);
+        localStorage.setItem('vsm_artisan_config', JSON.stringify(data));
+      }
+    });
+
+    const unsubPost = subscribeSiteConfigFromFirestore<PostFormConfig>('post_config', (data) => {
+      if (data) {
+        setPostConfig(data);
+        localStorage.setItem('vsm_post_config', JSON.stringify(data));
+      }
+    });
+
+    return () => {
+      unsubEvents();
+      unsubLuminaries();
+      unsubFounder();
+      unsubTeam();
+      unsubContact();
+      unsubDonation();
+      unsubJobs();
+      unsubScholarships();
+      unsubWorkshops();
+      unsubIdCard();
+      unsubMatrimony();
+      unsubArtisan();
+      unsubPost();
+    };
+  }, []);
+
   // Like a post
   const handleLikePost = (postId: string) => {
     setPosts((prev) =>
@@ -277,7 +391,16 @@ export default function App() {
 
   // Add a new event
   const handleAddEvent = (newEvent: SamajEvent) => {
-    setEvents((prev) => [newEvent, ...prev]);
+    setEvents((prev) => {
+      const updated = [newEvent, ...prev];
+      try {
+        localStorage.setItem('vsm_events', JSON.stringify(updated));
+        saveSiteConfigToFirestore('events', updated);
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
   };
 
   // Add a new luminary / amar shilpi
@@ -286,6 +409,7 @@ export default function App() {
       const updated = [newLuminary, ...prev];
       try {
         localStorage.setItem('vsm_luminaries', JSON.stringify(updated));
+        saveSiteConfigToFirestore('luminaries', updated);
       } catch (e) {
         console.warn(e);
       }
@@ -297,6 +421,7 @@ export default function App() {
     setLuminaries(newList);
     try {
       localStorage.setItem('vsm_luminaries', JSON.stringify(newList));
+      saveSiteConfigToFirestore('luminaries', newList);
     } catch (e) {
       console.warn(e);
     }
@@ -384,6 +509,11 @@ export default function App() {
             events={events}
             onAddEvent={handleAddEvent}
             lang={lang}
+            isAdminLoggedIn={isAdminLoggedIn}
+            onOpenAdmin={() => {
+              setAdminInitialTab('events');
+              setIsAdminOpen(true);
+            }}
           />
         )}
 

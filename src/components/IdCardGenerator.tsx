@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Language, SamajIdCardData, IdCardFormConfig } from '../types';
 import { DEFAULT_IDCARD_CONFIG } from '../data/formsData';
-import { Award, Download, Printer, CheckCircle, ShieldCheck, Upload, Camera, Settings } from 'lucide-react';
+import { Award, Download, Printer, CheckCircle, ShieldCheck, Upload, Camera, Settings, Mail } from 'lucide-react';
+import { checkMembershipEmailExists, addMembershipToFirestore } from '../firebase';
+import { AlreadyRegisteredModal } from './AlreadyRegisteredModal';
 
 interface IdCardGeneratorProps {
   lang: Language;
@@ -22,6 +24,7 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
     bloodGroup: 'B+',
     dob: '1988-08-15',
     mobile: '+91 98290 12345',
+    email: '',
     city: 'जयपुर',
     state: 'राजस्थान',
     membershipId: 'VK-2026-8942',
@@ -33,6 +36,17 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [photoFileName, setPhotoFileName] = useState<string>('');
   const [renderedCardDataUrl, setRenderedCardDataUrl] = useState<string>('');
+
+  // Already Registered Popup Modal State (1 Email = 1 Membership Rule)
+  const [alreadyRegisteredModalData, setAlreadyRegisteredModalData] = useState<{
+    isOpen: boolean;
+    email: string;
+    name?: string;
+    id?: string;
+  }>({
+    isOpen: false,
+    email: '',
+  });
 
   // Handle local photo upload
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,8 +269,43 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
 
   // Download Handler
   const handleDownload = async () => {
+    const cleanEmail = (formData.email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      alert(isHi ? 'कृपया पहचान पत्र डाउनलोड करने हेतु ईमेल पता दर्ज करें।' : 'Please enter email address for verification.');
+      return;
+    }
+
+    // 1-TIME REGISTRATION POLICY: Check if this email is already registered
+    try {
+      const checkRes = await checkMembershipEmailExists(cleanEmail);
+      if (checkRes.exists && checkRes.member?.membershipId !== formData.membershipId) {
+        setAlreadyRegisteredModalData({
+          isOpen: true,
+          email: cleanEmail,
+          name: checkRes.member?.fullName,
+          id: checkRes.member?.membershipId,
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('Membership check warning:', e);
+    }
+
     setIsGenerating(true);
     try {
+      // Record / Save Membership to Cloud & Local
+      addMembershipToFirestore({
+        membershipId: formData.membershipId,
+        fullName: formData.fullName,
+        email: cleanEmail,
+        mobile: formData.mobile,
+        subcaste: formData.subcaste,
+        gotra: formData.gotra,
+        city: formData.city,
+        state: formData.state,
+        createdAt: new Date().toISOString()
+      });
+
       const dataUrl = await generateCardCanvasDataUrl();
       const link = document.createElement('a');
       link.download = `Vishwakarma-Samaj-ID-${formData.membershipId}.png`;
@@ -276,8 +325,43 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
 
   // 100% Guaranteed Crisp Print Handler (Fix for user's screenshot)
   const handlePrint = async () => {
+    const cleanEmail = (formData.email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      alert(isHi ? 'कृपया पहचान पत्र प्रिंट करने हेतु ईमेल पता दर्ज करें।' : 'Please enter email address for verification.');
+      return;
+    }
+
+    // 1-TIME REGISTRATION POLICY: Check duplicate email
+    try {
+      const checkRes = await checkMembershipEmailExists(cleanEmail);
+      if (checkRes.exists && checkRes.member?.membershipId !== formData.membershipId) {
+        setAlreadyRegisteredModalData({
+          isOpen: true,
+          email: cleanEmail,
+          name: checkRes.member?.fullName,
+          id: checkRes.member?.membershipId,
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('Membership check warning:', e);
+    }
+
     setIsGenerating(true);
     try {
+      // Record / Save Membership to Cloud & Local
+      addMembershipToFirestore({
+        membershipId: formData.membershipId,
+        fullName: formData.fullName,
+        email: cleanEmail,
+        mobile: formData.mobile,
+        subcaste: formData.subcaste,
+        gotra: formData.gotra,
+        city: formData.city,
+        state: formData.state,
+        createdAt: new Date().toISOString()
+      });
+
       const dataUrl = await generateCardCanvasDataUrl();
       setRenderedCardDataUrl(dataUrl);
 
@@ -622,16 +706,33 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-medium text-stone-700 block mb-1">
-                {isHi ? 'मोबाइल नंबर *' : 'Mobile Number *'}
-              </label>
-              <input
-                type="tel"
-                value={formData.mobile}
-                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-xs font-mono"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-stone-700 block mb-1">
+                  {isHi ? 'मोबाइल नंबर *' : 'Mobile Number *'}
+                </label>
+                <input
+                  type="tel"
+                  value={formData.mobile}
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-stone-700 block mb-1 flex items-center justify-between">
+                  <span>{isHi ? 'ईमेल पता *' : 'Email Address *'}</span>
+                  <span className="text-[10px] text-amber-800 font-bold">1 ईमेल = 1 सदस्यता</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  placeholder="name@example.com"
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-xs font-medium"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -796,6 +897,19 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
           </div>
         </div>
       </div>
+
+      {/* Already Registered Modal (1 Email = 1 Membership Rule) */}
+      <AlreadyRegisteredModal
+        isOpen={alreadyRegisteredModalData.isOpen}
+        onClose={() => setAlreadyRegisteredModalData({ ...alreadyRegisteredModalData, isOpen: false })}
+        email={alreadyRegisteredModalData.email}
+        type="membership"
+        lang={lang}
+        details={{
+          name: alreadyRegisteredModalData.name,
+          id: alreadyRegisteredModalData.id,
+        }}
+      />
     </div>
   );
 };

@@ -16,6 +16,7 @@ import {
   updateDoc,
   deleteDoc,
   query,
+  where,
   orderBy,
   limit,
   serverTimestamp,
@@ -374,5 +375,137 @@ export function subscribeSiteConfigFromFirestore<T>(
     console.warn(`Failed to attach Firestore listener for ${configKey}:`, err);
     return () => {};
   }
+}
+
+// ==========================================
+// 6. MEMBERSHIP REGISTRATION & 1-TIME EMAIL VALIDATION SERVICE
+// Enforces 1 email = 1 registration policy requested by user
+// ==========================================
+export interface StoredMembershipRecord {
+  id?: string;
+  membershipId: string;
+  fullName: string;
+  email: string;
+  mobile: string;
+  subcaste: string;
+  gotra?: string;
+  city: string;
+  state: string;
+  createdAt?: string;
+  registeredAt?: any;
+}
+
+export async function addMembershipToFirestore(memberData: StoredMembershipRecord): Promise<string | null> {
+  try {
+    const colRef = collection(db, 'memberships');
+    const docRef = await addDoc(colRef, {
+      ...memberData,
+      registeredAt: serverTimestamp()
+    });
+    // Also store locally to guarantee data is never wiped
+    try {
+      const existing: StoredMembershipRecord[] = JSON.parse(localStorage.getItem('vsm_memberships') || '[]');
+      const filtered = existing.filter((m) => m.membershipId !== memberData.membershipId && m.email.toLowerCase() !== memberData.email.toLowerCase());
+      localStorage.setItem('vsm_memberships', JSON.stringify([memberData, ...filtered]));
+    } catch {}
+    return docRef.id;
+  } catch (err) {
+    console.error('Error saving membership to Firestore:', err);
+    try {
+      const existing: StoredMembershipRecord[] = JSON.parse(localStorage.getItem('vsm_memberships') || '[]');
+      const filtered = existing.filter((m) => m.membershipId !== memberData.membershipId && m.email.toLowerCase() !== memberData.email.toLowerCase());
+      localStorage.setItem('vsm_memberships', JSON.stringify([memberData, ...filtered]));
+    } catch {}
+    return `local-${Date.now()}`;
+  }
+}
+
+export async function fetchMembershipsFromFirestore(): Promise<StoredMembershipRecord[]> {
+  try {
+    const colRef = collection(db, 'memberships');
+    const q = query(colRef, limit(200));
+    const snapshot = await getDocs(q);
+    const remoteList = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data()
+    })) as StoredMembershipRecord[];
+
+    // Merge with local records so prior data is never lost
+    try {
+      const local: StoredMembershipRecord[] = JSON.parse(localStorage.getItem('vsm_memberships') || '[]');
+      const map = new Map<string, StoredMembershipRecord>();
+      remoteList.forEach((r) => map.set(r.email.toLowerCase(), r));
+      local.forEach((l) => {
+        if (!map.has(l.email.toLowerCase())) map.set(l.email.toLowerCase(), l);
+      });
+      const combined = Array.from(map.values());
+      localStorage.setItem('vsm_memberships', JSON.stringify(combined));
+      return combined;
+    } catch {
+      return remoteList;
+    }
+  } catch (err) {
+    console.warn('Error fetching memberships from Firestore:', err);
+    try {
+      return JSON.parse(localStorage.getItem('vsm_memberships') || '[]');
+    } catch {
+      return [];
+    }
+  }
+}
+
+// 1-TIME EMAIL VALIDATION HELPERS
+export async function checkMatrimonyEmailExists(email: string): Promise<{ exists: boolean; profile?: any }> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return { exists: false };
+
+  // 1. Check local storage
+  try {
+    const localProfiles = JSON.parse(localStorage.getItem('vsm_matrimonial_profiles') || '[]');
+    const match = localProfiles.find((p: any) => p.email && p.email.trim().toLowerCase() === cleanEmail);
+    if (match) return { exists: true, profile: match };
+  } catch {}
+
+  // 2. Check remote Firestore
+  try {
+    const colRef = collection(db, 'matrimony');
+    const q = query(colRef, where('email', '==', cleanEmail), limit(1));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const docData = snap.docs[0].data();
+      return { exists: true, profile: { id: snap.docs[0].id, ...docData } };
+    }
+  } catch (err) {
+    console.warn('Firestore matrimony email check note:', err);
+  }
+
+  return { exists: false };
+}
+
+export async function checkMembershipEmailExists(email: string): Promise<{ exists: boolean; member?: any }> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return { exists: false };
+
+  // 1. Check local storage
+  try {
+    const localMembers = JSON.parse(localStorage.getItem('vsm_memberships') || '[]');
+    const match = localMembers.find((m: any) => m.email && m.email.trim().toLowerCase() === cleanEmail);
+    if (match) return { exists: true, member: match };
+  } catch {}
+
+  // 2. Check remote Firestore
+  try {
+    const colRef = collection(db, 'memberships');
+    const q = query(colRef, where('email', '==', cleanEmail), limit(1));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const docData = snap.docs[0].data();
+      return { exists: true, member: { id: snap.docs[0].id, ...docData } };
+    }
+  } catch (err) {
+    console.warn('Firestore membership email check note:', err);
+  }
+
+  return { exists: false };
 }
 

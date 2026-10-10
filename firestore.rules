@@ -58,5 +58,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    // Samaj Membership Registrations (1 email = 1 membership)
+    match /memberships/{membershipId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

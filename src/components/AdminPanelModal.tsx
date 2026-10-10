@@ -63,7 +63,8 @@ import {
   deleteMatrimonialProfileFromFirestore,
   updateMatrimonialProfileVisibilityInFirestore,
   StoredMatrimonialProfile,
-  saveSiteConfigToFirestore
+  saveSiteConfigToFirestore,
+  fetchSiteConfigFromFirestore
 } from '../firebase';
 import { FounderInfo, TeamMember, HallOfFamePerson, HALL_OF_FAME_DATA } from '../data/homeData';
 import { MATRIMONIAL_PROFILES } from '../data/mockData';
@@ -266,8 +267,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   }, [initialTab, isOpen]);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string>('');
 
-  // 1. Applications State
-  const [applications, setApplications] = useState<StoredApplication[]>([]);
+  // 1. Applications State (Never wipe existing applications on updates)
+  const [applications, setApplications] = useState<StoredApplication[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('vsm_applications') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'job' | 'scholarship' | 'workshop'>('all');
@@ -599,9 +606,41 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await fetchApplicationsFromFirestore();
-      setApplications(data);
+      const cloudApps = await fetchApplicationsFromFirestore();
+      setApplications((prev) => {
+        const localSaved: StoredApplication[] = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('vsm_applications') || '[]');
+          } catch {
+            return [];
+          }
+        })();
+        const map = new Map<string, StoredApplication>();
+        // Add cloud applications
+        cloudApps.forEach((app) => map.set(app.regNumber || app.id, app));
+        // Keep previously loaded applications
+        prev.forEach((app) => {
+          const key = app.regNumber || app.id;
+          if (!map.has(key)) map.set(key, app);
+        });
+        // Keep local saved applications
+        localSaved.forEach((app) => {
+          const key = app.regNumber || app.id;
+          if (!map.has(key)) map.set(key, app);
+        });
+        const combined = Array.from(map.values());
+        try {
+          localStorage.setItem('vsm_applications', JSON.stringify(combined));
+        } catch {}
+        return combined;
+      });
       loadFirebaseMatrimony();
+      // Load cloud-synced sub-admins
+      const cloudSubAdmins = await fetchSiteConfigFromFirestore<SubAdmin[]>('sub_admins');
+      if (cloudSubAdmins && cloudSubAdmins.length > 0) {
+        setSubAdmins(cloudSubAdmins);
+        localStorage.setItem('vsm_sub_admins', JSON.stringify(cloudSubAdmins));
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -622,6 +661,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setSubAdmins(updated);
     try {
       localStorage.setItem('vsm_sub_admins', JSON.stringify(updated));
+      saveSiteConfigToFirestore('sub_admins', updated);
     } catch (e) {}
     setIsAddingSubAdmin(false);
     setNewSubAdminForm({
@@ -641,6 +681,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       setSubAdmins(updated);
       try {
         localStorage.setItem('vsm_sub_admins', JSON.stringify(updated));
+        saveSiteConfigToFirestore('sub_admins', updated);
       } catch (e) {}
       showToast('व्यवस्थापक खाता हटाया गया!');
     }
@@ -651,6 +692,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setSubAdmins(updated);
     try {
       localStorage.setItem('vsm_sub_admins', JSON.stringify(updated));
+      saveSiteConfigToFirestore('sub_admins', updated);
     } catch (e) {}
     showToast('व्यवस्थापक स्थिति अपडेट की गई!');
   };
@@ -683,6 +725,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setSubAdmins(updated);
     try {
       localStorage.setItem('vsm_sub_admins', JSON.stringify(updated));
+      saveSiteConfigToFirestore('sub_admins', updated);
     } catch (e) {
       console.warn(e);
     }
@@ -822,6 +865,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setLuminariesList(updated);
     try {
       localStorage.setItem('vsm_luminaries', JSON.stringify(updated));
+      saveSiteConfigToFirestore('luminaries', updated);
     } catch (err) {
       console.warn(err);
     }
@@ -836,6 +880,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       setLuminariesList(updated);
       try {
         localStorage.setItem('vsm_luminaries', JSON.stringify(updated));
+        saveSiteConfigToFirestore('luminaries', updated);
       } catch (err) {
         console.warn(err);
       }
@@ -1120,7 +1165,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const handleSaveDonation = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateDonationConfig(editDonation);
-    localStorage.setItem('vsm_donation', JSON.stringify(editDonation));
+    try {
+      localStorage.setItem('vsm_donation', JSON.stringify(editDonation));
+      saveSiteConfigToFirestore('donation', editDonation);
+    } catch (e) {
+      console.warn(e);
+    }
     showToast('दान, QR कोड, बैंक खाता विवरण व फॉर्म सेटिंग्स सफलतापूर्वक सुरक्षित व अपडेट हुए!');
   };
 
@@ -1137,7 +1187,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const updated = { ...editDonation, purposes: updatedPurposes };
     setEditDonation(updated);
     onUpdateDonationConfig(updated);
-    localStorage.setItem('vsm_donation', JSON.stringify(updated));
+    try {
+      localStorage.setItem('vsm_donation', JSON.stringify(updated));
+      saveSiteConfigToFirestore('donation', updated);
+    } catch (e) {
+      console.warn(e);
+    }
     setNewCauseForm({ labelHi: '', desc: '' });
     setIsAddingCause(false);
     showToast('दान का नया उद्देश्य सफलतापूर्वक जोड़ा गया!');
@@ -1153,7 +1208,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const updated = { ...editDonation, purposes: updatedPurposes };
     setEditDonation(updated);
     onUpdateDonationConfig(updated);
-    localStorage.setItem('vsm_donation', JSON.stringify(updated));
+    try {
+      localStorage.setItem('vsm_donation', JSON.stringify(updated));
+      saveSiteConfigToFirestore('donation', updated);
+    } catch (e) {
+      console.warn(e);
+    }
     showToast('उद्देश्य हटा दिया गया!');
   };
 
@@ -1161,28 +1221,48 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const handleSaveIdCardConfig = (e: React.FormEvent) => {
     e.preventDefault();
     if (onUpdateIdCardConfig) onUpdateIdCardConfig(editIdCard);
-    localStorage.setItem('vsm_idcard_config', JSON.stringify(editIdCard));
+    try {
+      localStorage.setItem('vsm_idcard_config', JSON.stringify(editIdCard));
+      saveSiteConfigToFirestore('idcard_config', editIdCard);
+    } catch (e) {
+      console.warn(e);
+    }
     showToast('डिजिटल परिचय पत्र फॉर्म सेटिंग्स सुरक्षित की गईं!');
   };
 
   const handleSaveMatrimonyConfig = (e: React.FormEvent) => {
     e.preventDefault();
     if (onUpdateMatrimonyConfig) onUpdateMatrimonyConfig(editMatrimony);
-    localStorage.setItem('vsm_matrimony_config', JSON.stringify(editMatrimony));
+    try {
+      localStorage.setItem('vsm_matrimony_config', JSON.stringify(editMatrimony));
+      saveSiteConfigToFirestore('matrimony_config', editMatrimony);
+    } catch (e) {
+      console.warn(e);
+    }
     showToast('विवाह बायोडाटा फॉर्म सेटिंग्स सुरक्षित की गईं!');
   };
 
   const handleSaveArtisanConfig = (e: React.FormEvent) => {
     e.preventDefault();
     if (onUpdateArtisanConfig) onUpdateArtisanConfig(editArtisan);
-    localStorage.setItem('vsm_artisan_config', JSON.stringify(editArtisan));
+    try {
+      localStorage.setItem('vsm_artisan_config', JSON.stringify(editArtisan));
+      saveSiteConfigToFirestore('artisan_config', editArtisan);
+    } catch (e) {
+      console.warn(e);
+    }
     showToast('शिल्पकार व व्यवसाय पंजीयन फॉर्म सेटिंग्स सुरक्षित की गईं!');
   };
 
   const handleSavePostConfig = (e: React.FormEvent) => {
     e.preventDefault();
     if (onUpdatePostConfig) onUpdatePostConfig(editPost);
-    localStorage.setItem('vsm_post_config', JSON.stringify(editPost));
+    try {
+      localStorage.setItem('vsm_post_config', JSON.stringify(editPost));
+      saveSiteConfigToFirestore('post_config', editPost);
+    } catch (e) {
+      console.warn(e);
+    }
     showToast('समाज चर्चा पोस्ट फॉर्म सेटिंग्स सुरक्षित की गईं!');
   };
 
@@ -1193,7 +1273,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const updated = [newJ, ...editJobsList];
     setEditJobsList(updated);
     onUpdateJobs(updated);
-    localStorage.setItem('vsm_jobs', JSON.stringify(updated));
+    try {
+      localStorage.setItem('vsm_jobs', JSON.stringify(updated));
+      saveSiteConfigToFirestore('jobs', updated);
+    } catch (e) {
+      console.warn(e);
+    }
     setIsAddingJob(false);
     showToast('नई नौकरी रिक्ति सफलतापूर्वक जोड़ी गई!');
   };
@@ -1203,7 +1288,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       const updated = editJobsList.filter((j) => j.id !== id);
       setEditJobsList(updated);
       onUpdateJobs(updated);
-      localStorage.setItem('vsm_jobs', JSON.stringify(updated));
+      try {
+        localStorage.setItem('vsm_jobs', JSON.stringify(updated));
+        saveSiteConfigToFirestore('jobs', updated);
+      } catch (e) {
+        console.warn(e);
+      }
       showToast('रिक्ति हटा दी गई!');
     }
   };
@@ -1214,7 +1304,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const updated = [newS, ...editSchList];
     setEditSchList(updated);
     onUpdateScholarships(updated);
-    localStorage.setItem('vsm_scholarships', JSON.stringify(updated));
+    try {
+      localStorage.setItem('vsm_scholarships', JSON.stringify(updated));
+      saveSiteConfigToFirestore('scholarships', updated);
+    } catch (e) {
+      console.warn(e);
+    }
     setIsAddingSch(false);
     showToast('नई छात्रवृत्ति योजना सफलतापूर्वक जोड़ी गई!');
   };
@@ -1224,7 +1319,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       const updated = editSchList.filter((s) => s.id !== id);
       setEditSchList(updated);
       onUpdateScholarships(updated);
-      localStorage.setItem('vsm_scholarships', JSON.stringify(updated));
+      try {
+        localStorage.setItem('vsm_scholarships', JSON.stringify(updated));
+        saveSiteConfigToFirestore('scholarships', updated);
+      } catch (e) {
+        console.warn(e);
+      }
       showToast('छात्रवृत्ति हटा दी गई!');
     }
   };
@@ -1235,7 +1335,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const updated = [newW, ...editWsList];
     setEditWsList(updated);
     onUpdateWorkshops(updated);
-    localStorage.setItem('vsm_workshops', JSON.stringify(updated));
+    try {
+      localStorage.setItem('vsm_workshops', JSON.stringify(updated));
+      saveSiteConfigToFirestore('workshops', updated);
+    } catch (e) {
+      console.warn(e);
+    }
     setIsAddingWs(false);
     showToast('नई कार्यशाला सफलतापूर्वक जोड़ी गई!');
   };
@@ -1245,7 +1350,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       const updated = editWsList.filter((w) => w.id !== id);
       setEditWsList(updated);
       onUpdateWorkshops(updated);
-      localStorage.setItem('vsm_workshops', JSON.stringify(updated));
+      try {
+        localStorage.setItem('vsm_workshops', JSON.stringify(updated));
+        saveSiteConfigToFirestore('workshops', updated);
+      } catch (e) {
+        console.warn(e);
+      }
       showToast('कार्यशाला हटा दी गई!');
     }
   };
