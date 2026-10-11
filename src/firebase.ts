@@ -170,7 +170,7 @@ export interface StoredMatrimonialProfile {
   email?: string;
   verified?: boolean;
   isOtpVerified?: boolean;
-  verificationMethod?: 'firebase_sms' | 'whatsapp' | 'manual';
+  verificationMethod?: 'firebase_sms' | 'sms' | 'email' | 'whatsapp' | 'manual';
   photoPrivacy?: 'public' | 'blur_request' | 'members_only' | 'private';
   contactPrivacy?: 'public' | 'on_request' | 'guardian_only';
   firebaseSynced?: boolean;

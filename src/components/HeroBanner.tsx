@@ -74,10 +74,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ setActiveTab, lang }) =>
             {/* Action buttons */}
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-1">
               <button
-                onClick={() => setActiveTab('directory')}
+                onClick={() => setActiveTab('idcard')}
                 className="px-5 py-2.5 text-xs sm:text-sm font-bold text-stone-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer transform hover:scale-[1.02]"
               >
-                <span>{isHi ? 'कारीगर व व्यवसाय निर्देशिका' : 'Explore Artisan Directory'}</span>
+                <Award className="w-4 h-4 text-stone-950" />
+                <span>{isHi ? 'सदस्य बनें' : 'Become a Member'}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
 
@@ -89,11 +90,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ setActiveTab, lang }) =>
               </button>
 
               <button
-                onClick={() => setActiveTab('idcard')}
+                onClick={() => setActiveTab('directory')}
                 className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-amber-300 hover:text-amber-200 transition-colors flex items-center gap-1.5 cursor-pointer underline-offset-4 hover:underline"
               >
-                <Award className="w-4 h-4 text-amber-400" />
-                <span>{isHi ? 'पहचान पत्र बनाएं' : 'Get Samaj ID Card'}</span>
+                <span>{isHi ? 'कारीगर व व्यवसाय निर्देशिका' : 'Explore Artisan Directory'}</span>
+                <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
               </button>
             </div>
 
@@ -157,18 +158,16 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ setActiveTab, lang }) =>
                   />
                   {/* Subtle inner corner gold shine */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-
-                  {/* Top Floating Badge */}
-                  <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-xs text-amber-300 text-[11px] font-bold px-3 py-1 rounded-full border border-amber-400/60 shadow-md flex items-center gap-1.5 font-hindi">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>{isHi ? 'सृष्टि के आदि शिल्पी' : 'Primal Architect'}</span>
-                  </div>
                 </div>
 
                 {/* Bottom Inscription Ribbon */}
-                <div className="pt-3 pb-1 text-center font-hindi space-y-0.5">
+                <div className="pt-3 pb-1 text-center font-hindi space-y-1">
                   <div className="text-base sm:text-lg font-bold font-display text-amber-300 drop-shadow-sm flex items-center justify-center gap-2">
                     <span>{isHi ? 'ॐ श्री विश्वकर्मणे नमः' : 'Lord Shri Vishwakarma'}</span>
+                  </div>
+                  {/* Small letters in middle */}
+                  <div className="text-[11px] sm:text-xs text-amber-200/90 font-medium tracking-wide">
+                    {isHi ? 'सृष्टिकर्ता, सृष्टिनियंता' : 'Cosmic Creator & Sovereign Sustainer'}
                   </div>
                   <div className="text-xs text-amber-100/90 font-medium">
                     {isHi

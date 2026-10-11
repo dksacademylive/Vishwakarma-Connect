@@ -46,11 +46,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
-            {/* Zone 2: Navigation links for desktop/PC - Generous spacing, distinct padded pills, no cramping */}
-            <nav className="hidden xl:flex items-center gap-2 xl:gap-2.5 2xl:gap-4.5 text-xs xl:text-[13px] 2xl:text-sm font-medium text-stone-700 mx-2 xl:mx-4 2xl:mx-8">
+            {/* Zone 2: Navigation links for desktop/PC - Optimized compact spacing so actions are NEVER pushed off */}
+            <nav className="hidden xl:flex items-center gap-1 2xl:gap-2.5 text-xs 2xl:text-[13px] font-medium text-stone-700 mx-1 2xl:mx-3 flex-1 min-w-0 justify-center">
               <button
                 onClick={() => setActiveTab('home')}
-                className={`px-2.5 xl:px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
                   activeTab === 'home'
                     ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300/80 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
@@ -61,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => setActiveTab('feed')}
-                className={`px-2.5 xl:px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
                   activeTab === 'feed'
                     ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300/80 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
@@ -72,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => setActiveTab('events')}
-                className={`px-2.5 xl:px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
                   activeTab === 'events'
                     ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300/80 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
@@ -83,18 +83,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => setActiveTab('directory')}
-                className={`px-2.5 xl:px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
                   activeTab === 'directory'
                     ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300/80 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
                 }`}
               >
-                {isHi ? 'शिल्प व व्यापार' : 'Artisans & Trade'}
+                {isHi ? 'शिल्प व व्यापार' : 'Directory'}
               </button>
 
               <button
                 onClick={() => setActiveTab('matrimony')}
-                className={`px-2.5 xl:px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
                   activeTab === 'matrimony'
                     ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300/80 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
@@ -105,18 +105,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => setActiveTab('heritage')}
-                className={`px-2.5 xl:px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
                   activeTab === 'heritage'
                     ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300/80 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
                 }`}
               >
-                {isHi ? 'तीर्थ, इतिहास व पुराण' : 'Heritage & Scriptures'}
+                {isHi ? 'तीर्थ व पुराण' : 'Heritage'}
               </button>
 
               <button
                 onClick={() => setActiveTab('luminaries')}
-                className={`px-2.5 xl:px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
                   activeTab === 'luminaries'
                     ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300/80 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
@@ -127,7 +127,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => setActiveTab('youth')}
-                className={`px-2.5 xl:px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
                   activeTab === 'youth'
                     ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300/80 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
@@ -138,21 +138,21 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => setActiveTab('idcard')}
-                className={`px-2.5 xl:px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap ${
                   activeTab === 'idcard'
                     ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300/80 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
                 }`}
               >
-                {isHi ? 'पहचान पत्र' : 'Samaj ID Card'}
+                {isHi ? 'पहचान पत्र' : 'ID Card'}
               </button>
             </nav>
 
-            {/* Zone 3: Top Menubar Actions (Admin Login, Language, Donate) - Spacious & mobile optimized */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3 2xl:gap-4 shrink-0">
+            {/* Zone 3: Top Menubar Actions (Admin Login, Language, Donate) - Guaranteed ALWAYS VISIBLE on PC & Mobile */}
+            <div className="flex items-center gap-1.5 sm:gap-2 2xl:gap-3 shrink-0 ml-auto z-20">
               <button
                 onClick={() => setLang(isHi ? 'en' : 'hi')}
-                className="px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors shrink-0"
+                className="px-2 py-1.5 text-[11px] sm:text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors shrink-0"
                 title="भाषा बदलें (Change Language)"
               >
                 {isHi ? 'Eng' : 'हिंदी'}
@@ -163,7 +163,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={onOpenAdmin}
-                    className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                    className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
                     title={isHi ? 'केंद्रीय एडमिन कंट्रोल पैनल' : 'Master Admin Suite'}
                   >
                     <ShieldCheck className="w-3.5 h-3.5 text-amber-950" />
@@ -184,21 +184,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onOpenAdmin && (
                   <button
                     onClick={onOpenAdmin}
-                    className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+                    className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
                     title={isHi ? 'प्रबंधक लॉगिन (पासकोड दर्ज करें)' : 'Admin Login (Enter Passcode)'}
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-950" />
-                    <span className="hidden xs:inline">{isHi ? '👑 एडमिन लॉगिन' : '👑 Admin Login'}</span>
-                    <span className="xs:hidden">{isHi ? 'एडमिन' : 'Admin'}</span>
+                    <span className="hidden 2xl:inline">{isHi ? '👑 एडमिन लॉगिन' : '👑 Admin Login'}</span>
+                    <span className="2xl:hidden">{isHi ? '👑 एडमिन' : '👑 Admin'}</span>
                   </button>
                 )
               )}
 
-              {/* Sahyog / Dan Button: ALWAYS VISIBLE & NEVER HIDDEN on Mobile & PC */}
+              {/* Sahyog / Dan Button: GUARANTEED 100% VISIBLE ON PC & MOBILE (NEVER CLIPPED) */}
               <button
                 type="button"
                 onClick={onOpenDonate}
-                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-white bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 hover:from-red-500 hover:to-amber-700 active:scale-95 rounded-xl shadow-xs transition-all whitespace-nowrap cursor-pointer shrink-0 z-10"
+                className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-white bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 hover:from-red-500 hover:to-amber-700 active:scale-95 rounded-xl shadow-xs transition-all whitespace-nowrap cursor-pointer shrink-0 z-30"
                 title={isHi ? 'विश्वकर्मा सहायता प्रकोष्ठ में सहयोग / दान करें' : 'Donate to Samaj Relief Fund'}
               >
                 <Heart className="w-3.5 h-3.5 text-white fill-white shrink-0" />
