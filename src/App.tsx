@@ -31,6 +31,11 @@ import {
   DEFAULT_ARTISAN_CONFIG,
   DEFAULT_POST_CONFIG
 } from './data/formsData';
+import {
+  isCurrentlyAdminAuthenticated,
+  saveAdminSession,
+  clearAdminSession
+} from './utils/adminAuth';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './components/HomePage';
 import { FeedSection } from './components/FeedSection';
@@ -72,29 +77,19 @@ export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [adminInitialTab, setAdminInitialTab] = useState<AdminTab>('applications');
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('vsm_admin_logged_in') === 'true';
-    } catch {
-      return false;
-    }
+    return isCurrentlyAdminAuthenticated();
   });
 
-  const handleAdminLoginSuccess = () => {
+  const handleAdminLoginSuccess = (adminIdentifier?: string) => {
     setIsAdminLoggedIn(true);
-    try {
-      localStorage.setItem('vsm_admin_logged_in', 'true');
-    } catch (e) {
-      console.warn(e);
+    if (adminIdentifier) {
+      saveAdminSession(adminIdentifier);
     }
   };
 
   const handleAdminLogout = () => {
+    clearAdminSession();
     setIsAdminLoggedIn(false);
-    try {
-      localStorage.removeItem('vsm_admin_logged_in');
-    } catch (e) {
-      console.warn(e);
-    }
   };
 
   // Only expose admin editing triggers to sections when Admin is actively logged in!
@@ -445,7 +440,7 @@ export default function App() {
 
       {/* Prominent Admin Mode Banner: ONLY visible when Admin is logged in */}
       {isAdminLoggedIn && (
-        <div className="bg-stone-900 text-amber-200 border-b border-amber-600/50 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs font-semibold z-30 sticky top-16 shadow-md font-hindi animate-fadeIn">
+        <div className="bg-stone-900 text-amber-200 border-b border-amber-600/50 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs font-semibold z-30 sticky top-[88px] lg:top-16 shadow-md font-hindi animate-fadeIn">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span className="text-amber-300 font-bold text-xs sm:text-sm">

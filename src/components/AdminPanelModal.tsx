@@ -90,6 +90,7 @@ import {
   DEFAULT_ARTISAN_CONFIG,
   DEFAULT_POST_CONFIG
 } from '../data/formsData';
+import { checkAdminPrivilege, saveAdminSession, AUTHORIZED_ADMIN } from '../utils/adminAuth';
 
 export interface SubAdmin {
   id: string;
@@ -236,8 +237,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return isAuthenticatedProp || false;
   });
+  const [adminIdentifier, setAdminIdentifier] = useState<string>('');
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<string>('');
+  const [accessDeniedMessage, setAccessDeniedMessage] = useState<string>('');
   const [showPin, setShowPin] = useState<boolean>(false);
   const [copiedPin, setCopiedPin] = useState<boolean>(false);
   const qrImageInputRef = useRef<HTMLInputElement>(null);
@@ -253,8 +256,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       }
     } else {
       setIsAuthenticated(false);
+      setAdminIdentifier('');
       setPinInput('');
       setPinError('');
+      setAccessDeniedMessage('');
     }
   }, [isAuthenticatedProp, isOpen]);
 
@@ -566,41 +571,49 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // 1. Super Admin Check
-    if (pinInput === currentPin || pinInput === '1234' || pinInput === 'admin123') {
-      setIsAuthenticated(true);
-      setLoggedInAdmin({
-        role: 'super_admin',
-        name: 'मुख्य व्यवस्थापक (Super Admin)',
-        roleTitle: 'सर्वोच्च प्रशासनिक अधिकार'
-      });
-      setPinError('');
-      onLoginSuccess?.();
-      loadData();
+    setPinError('');
+    setAccessDeniedMessage('');
+
+    if (!adminIdentifier.trim()) {
+      setPinError(isHi ? 'कृपया अपना अधिकृत एडमिन ईमेल या मोबाइल नंबर दर्ज करें।' : 'Please enter authorized admin email or mobile.');
       return;
     }
 
-    // 2. Sub-Admin Check
-    const matchedSub = subAdmins.find((sub) => sub.pin === pinInput && sub.isActive);
-    if (matchedSub) {
-      setIsAuthenticated(true);
-      setLoggedInAdmin({
-        role: matchedSub.roleKey,
-        name: matchedSub.name,
-        roleTitle: matchedSub.role
-      });
-      setPinError('');
-      onLoginSuccess?.();
-      loadData();
-
-      if (matchedSub.roleKey === 'matrimony') setActiveTab('matrimony');
-      else if (matchedSub.roleKey === 'events') setActiveTab('events');
-      else if (matchedSub.roleKey === 'youth') setActiveTab('schemes');
-      else if (matchedSub.roleKey === 'donation') setActiveTab('donation');
+    // 1. Strict Privilege Check: Only dksacademy.live@gmail.com OR 7045377303
+    const privilege = checkAdminPrivilege(adminIdentifier);
+    if (!privilege.isAuthorized) {
+      setAccessDeniedMessage(
+        isHi
+          ? '🚫 एक्सेस अस्वीकृत (Access Denied): आपके पास एडमिन प्रिविलेज नहीं हैं। यह नियंत्रण कक्ष केवल अधिकृत व्यवस्थापक (ईमेल: dksacademy.live@gmail.com अथवा मोबाइल: 7045377303) के लिए सुरक्षित है। सामान्य विज़िटर्स को इस क्षेत्र में प्रवेश की अनुमति नहीं है।'
+          : '🚫 Access Denied: You do not have admin privileges. Access is strictly restricted to authorized admin (Email: dksacademy.live@gmail.com or Mobile: 7045377303).'
+      );
+      setPinError(isHi ? 'एक्सेस अस्वीकृत (Access Denied) - अनधिकृत उपयोगकर्ता' : 'Access Denied - Unauthorized user');
       return;
     }
 
-    setPinError(`अमान्य एडमिन पिन। कृपया सही पिन दर्ज करें। (सुपर एडमिन: 1234, परिणय प्रभारी: 7788, आयोजन: 5566, युवा: 3344)`);
+    // 2. Passcode Verification
+    const validPins = [currentPin, '1234', 'admin123'];
+    if (!validPins.includes(pinInput.trim())) {
+      setPinError(
+        isHi
+          ? 'अमान्य सुरक्षा पासकोड! कृपया सही सुरक्षा पिन दर्ज करें।'
+          : 'Invalid passcode! Please enter the correct security PIN.'
+      );
+      return;
+    }
+
+    // 3. Authorized Super Admin Login Granted
+    setIsAuthenticated(true);
+    setLoggedInAdmin({
+      role: 'super_admin',
+      name: `मुख्य व्यवस्थापक (${privilege.cleanIdentifier})`,
+      roleTitle: 'सर्वोच्च प्रशासनिक अधिकार (Super Admin)'
+    });
+    setPinError('');
+    setAccessDeniedMessage('');
+    saveAdminSession(privilege.cleanIdentifier);
+    onLoginSuccess?.();
+    loadData();
   };
 
   const loadData = async () => {
@@ -1382,23 +1395,23 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-2xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fadeIn font-hindi">
-      <div className="bg-white rounded-3xl w-[98vw] max-w-7xl shadow-2xl border border-stone-200 max-h-[96vh] flex flex-col overflow-hidden my-auto">
+      <div className={`bg-white rounded-3xl w-[98vw] ${isAuthenticated ? 'max-w-7xl max-h-[96vh]' : 'max-w-lg max-h-[92vh]'} shadow-2xl border border-stone-200 flex flex-col overflow-hidden my-auto`}>
         {/* Top Header */}
-        <div className="bg-gradient-to-r from-stone-950 via-[#26140b] to-stone-950 text-white p-4 sm:p-5 flex items-center justify-between shrink-0 border-b border-amber-900/60">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center border border-amber-500/50 shadow-inner">
-              <ShieldCheck className="w-6 h-6 text-amber-400" />
+        <div className="bg-gradient-to-r from-stone-950 via-[#26140b] to-stone-950 text-white p-3.5 sm:p-4 flex items-center justify-between shrink-0 border-b border-amber-900/60">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center border border-amber-500/50 shadow-inner shrink-0">
+              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base sm:text-lg font-display text-white">
+                <h3 className="font-bold text-sm sm:text-base font-display text-white truncate max-w-[220px] xs:max-w-xs sm:max-w-none">
                   विश्वकर्मा समाज केंद्रीय प्रशासनिक नियंत्रण (Master Admin Suite)
                 </h3>
-                <span className="text-[10px] font-bold bg-amber-400 text-stone-950 px-2 py-0.5 rounded-full">
+                <span className="text-[9px] sm:text-[10px] font-bold bg-amber-400 text-stone-950 px-2 py-0.5 rounded-full shrink-0">
                   Live Control
                 </span>
               </div>
-              <p className="text-xs text-amber-200/80">
+              <p className="text-[11px] sm:text-xs text-amber-200/80 hidden xs:block">
                 अध्यक्ष, टीम, संपर्क पता, आयोजन व ऑनलाइन आवेदनों के पूर्ण संपादन का केंद्रीय पोर्टल
               </p>
             </div>
@@ -1429,91 +1442,123 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
           </div>
         </div>
 
-        {/* PIN Authentication Gate */}
+        {/* Protected Admin Authentication Gate */}
         {!isAuthenticated ? (
-          <div className="p-6 sm:p-10 text-center max-w-md mx-auto space-y-6 my-auto">
-            <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center mx-auto shadow-inner border border-amber-300">
-              <KeyRound className="w-8 h-8 text-amber-800" />
-            </div>
-
-            <div className="space-y-1.5">
-              <h4 className="text-xl font-bold text-stone-900">समाज प्रबंधक / एडमिन लॉगिन</h4>
-              <p className="text-xs text-stone-500">
-                गोपनीय डेटा, सूचनाएं व सेटिंग्स संपादित करने हेतु व्यवस्थापक पासकोड दर्ज करें।
-              </p>
-            </div>
-
-            <form onSubmit={handlePinSubmit} className="space-y-4">
-              <div className="space-y-1 relative">
-                <input
-                  type={showPin ? 'text' : 'password'}
-                  autoFocus
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
-                  placeholder="पासकोड दर्ज करें (PIN)"
-                  className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-300 rounded-2xl text-center text-lg tracking-widest font-mono focus:outline-none focus:border-amber-600 focus:bg-white pr-12 font-bold"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPin(!showPin)}
-                  className="absolute right-3.5 top-3.5 text-stone-400 hover:text-stone-700 p-1 cursor-pointer transition-colors"
-                  title={showPin ? 'पासकोड छिपाएं' : 'पासकोड देखें'}
-                >
-                  {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-                {pinError && <p className="text-xs text-red-600 font-semibold">{pinError}</p>}
+          <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 w-full flex flex-col justify-start sm:justify-center">
+            <div className="text-center max-w-md w-full mx-auto space-y-3 my-auto pb-4 font-hindi">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 text-amber-900 flex items-center justify-center mx-auto shadow-inner border border-amber-300">
+                <ShieldAlert className="w-6 h-6 text-amber-800" />
               </div>
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPinInput(currentPin)}
-                  className="w-1/3 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold transition-all cursor-pointer border border-stone-300"
-                >
-                  {currentPin} (Super Admin)
-                </button>
-
-                <button
-                  type="submit"
-                  className="flex-1 py-3 bg-gradient-to-r from-amber-800 to-amber-900 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl text-sm font-bold shadow-md cursor-pointer transition-all flex items-center justify-center gap-2"
-                >
-                  <Lock className="w-4 h-4 text-amber-200" />
-                  <span>एडमिन डैशबोर्ड में प्रवेश करें</span>
-                </button>
+              <div className="space-y-0.5">
+                <h4 className="text-lg font-bold text-stone-900 flex items-center justify-center gap-1.5">
+                  <span>सुरक्षित एडमिन प्रमाणीकरण</span>
+                  <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-sans font-bold">Protected</span>
+                </h4>
+                <p className="text-[11px] sm:text-xs text-stone-600 leading-relaxed font-medium">
+                  यह नियंत्रण कक्ष केवल अधिकृत व्यवस्थापक हेतु सुरक्षित है। प्रवेश के लिए अधिकृत ईमेल अथवा मोबाइल नंबर दर्ज करें।
+                </p>
               </div>
 
-              {/* Quick Multi-Admin Login Shortcuts */}
-              <div className="space-y-2 pt-2 border-t border-stone-200 text-left">
-                <div className="text-[11px] font-bold text-stone-700 flex items-center gap-1">
-                  <Crown className="w-3.5 h-3.5 text-amber-600" />
-                  <span>मल्टी-एडमिन त्वरित परीक्षण (Quick Role Logins):</span>
+              {/* Access Denied Banner */}
+              {accessDeniedMessage && (
+                <div className="p-3 bg-red-50 border-2 border-red-400 rounded-xl text-left space-y-1 shadow-xs animate-fadeIn">
+                  <div className="flex items-center gap-2 text-red-700 font-bold text-xs">
+                    <XCircle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>एक्सेस अस्वीकृत (Access Denied)</span>
+                  </div>
+                  <p className="text-[11px] text-red-800 leading-relaxed font-medium">
+                    {accessDeniedMessage}
+                  </p>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                  {subAdmins.slice(0, 4).map((sub) => (
+              )}
+
+              <form onSubmit={handlePinSubmit} className="space-y-3 pt-1">
+                {/* Field 1: Authorized Admin Email or Mobile */}
+                <div className="space-y-1 text-left">
+                  <label className="text-xs font-bold text-stone-700 flex items-center justify-between">
+                    <span>अधिकृत ईमेल अथवा मोबाइल नंबर *</span>
+                    <span className="text-[10px] text-amber-800 font-normal">Privileged Identity</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={adminIdentifier}
+                      onChange={(e) => {
+                        setAdminIdentifier(e.target.value);
+                        setPinError('');
+                        setAccessDeniedMessage('');
+                      }}
+                      placeholder="dksacademy.live@gmail.com या 7045377303"
+                      className="w-full px-3.5 py-2 sm:py-2.5 bg-stone-50 border-2 border-stone-300 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-amber-700 focus:bg-white pr-10 text-stone-900 transition-all shadow-2xs"
+                    />
+                    <div className="absolute right-3 top-2.5 text-stone-400 pointer-events-none">
+                      <UserCheck className="w-4 h-4 text-amber-700" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Field 2: Admin Passcode / PIN */}
+                <div className="space-y-1 text-left">
+                  <label className="text-xs font-bold text-stone-700 flex items-center justify-between">
+                    <span>सुरक्षा पासकोड (PIN) *</span>
+                    <span className="text-[10px] text-stone-500 font-normal">Security Passcode</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPin ? 'text' : 'password'}
+                      value={pinInput}
+                      onChange={(e) => {
+                        setPinInput(e.target.value);
+                        setPinError('');
+                      }}
+                      placeholder="पासकोड दर्ज करें (PIN)"
+                      className="w-full px-4 py-2 sm:py-2.5 bg-stone-50 border-2 border-stone-300 rounded-xl text-center text-base sm:text-lg tracking-widest font-mono focus:outline-none focus:border-amber-700 focus:bg-white pr-12 font-bold text-stone-900 shadow-2xs"
+                    />
                     <button
-                      key={sub.id}
                       type="button"
-                      onClick={() => setPinInput(sub.pin)}
-                      className={`p-1.5 border rounded-lg text-left cursor-pointer transition-colors ${
-                        sub.roleKey === 'matrimony'
-                          ? 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-900'
-                          : sub.roleKey === 'events'
-                          ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-900'
-                          : sub.roleKey === 'youth'
-                          ? 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-900'
-                          : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-900'
-                      }`}
+                      onClick={() => setShowPin(!showPin)}
+                      className="absolute right-3.5 top-2 sm:top-2.5 text-stone-400 hover:text-stone-700 p-1 cursor-pointer transition-colors"
+                      title={showPin ? 'पासकोड छिपाएं' : 'पासकोड देखें'}
                     >
-                      <div className="font-bold truncate">
-                        {sub.roleKey === 'matrimony' ? '💍 ' : sub.roleKey === 'events' ? '🎪 ' : sub.roleKey === 'youth' ? '💼 ' : '💰 '}
-                        {sub.role}
-                      </div>
-                      <div className="font-mono text-[10px] text-stone-600 font-bold">पिन: {sub.pin}</div>
+                      {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  ))}
+                  </div>
+                  {pinError && <p className="text-xs text-red-600 font-semibold pt-0.5">{pinError}</p>}
                 </div>
-              </div>
-            </form>
+
+                {/* Protected Notice for Authorized Admin */}
+                <div className="p-2.5 bg-amber-50/90 border border-amber-200/80 rounded-xl text-left space-y-1 text-xs">
+                  <div className="flex items-center gap-1.5 text-amber-900 font-bold text-[11px]">
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>केवल अधिकृत व्यवस्थापक (Authorized Admin Only)</span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 leading-relaxed">
+                    यह नियंत्रण कक्ष सुरक्षित है। केवल अधिकृत ईमेल (<strong className="text-amber-950 font-mono">dksacademy.live@gmail.com</strong>) अथवा मोबाइल (<strong className="text-amber-950 font-mono">7045377303</strong>) के माध्यम से ही एडमिन प्रिविलेज सक्रिय होंगे।
+                  </p>
+                </div>
+
+                {/* Login Action & Return Buttons - ALWAYS VISIBLE, NEVER CUT OFF */}
+                <div className="space-y-2 pt-1 pb-2">
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-amber-800 via-amber-900 to-stone-900 hover:from-amber-700 hover:to-stone-800 text-white rounded-xl text-sm font-bold shadow-md cursor-pointer transition-all flex items-center justify-center gap-2 transform hover:scale-[1.01]"
+                  >
+                    <Lock className="w-4 h-4 text-amber-300" />
+                    <span>सत्यापित करें एवं एडमिन पैनल खोलें</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="w-full py-1 text-xs font-semibold text-stone-500 hover:text-stone-800 cursor-pointer transition-colors"
+                  >
+                    ✕ रद्द करें एवं मुख्य पृष्ठ पर वापस जाएं
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         ) : (
           /* Authenticated Admin Workspace */
