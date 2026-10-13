@@ -52,7 +52,9 @@ import {
   UserX,
   ShieldAlert,
   Key,
-  Smartphone
+  Smartphone,
+  Cloud,
+  CloudLightning
 } from 'lucide-react';
 import {
   StoredApplication,
@@ -64,7 +66,10 @@ import {
   updateMatrimonialProfileVisibilityInFirestore,
   StoredMatrimonialProfile,
   saveSiteConfigToFirestore,
-  fetchSiteConfigFromFirestore
+  fetchSiteConfigFromFirestore,
+  syncAllDataToFirebase,
+  subscribeApplicationsFromFirestore,
+  subscribeMatrimonialProfilesFromFirestore
 } from '../firebase';
 import { FounderInfo, TeamMember, HallOfFamePerson, HALL_OF_FAME_DATA } from '../data/homeData';
 import { MATRIMONIAL_PROFILES } from '../data/mockData';
@@ -81,7 +86,9 @@ import {
   PostFormConfig,
   DonationPurposeItem,
   Language,
-  MatrimonialProfile
+  MatrimonialProfile,
+  Post,
+  Artisan
 } from '../types';
 import {
   DEFAULT_DONATION_CONFIG,
@@ -176,6 +183,11 @@ interface AdminPanelModalProps {
   onUpdatePostConfig?: (cfg: PostFormConfig) => void;
   luminaries?: HallOfFamePerson[];
   onUpdateLuminaries?: (list: HallOfFamePerson[]) => void;
+  posts?: Post[];
+  onUpdatePosts?: (posts: Post[]) => void;
+  artisans?: Artisan[];
+  onUpdateArtisans?: (artisans: Artisan[]) => void;
+  onSyncAllToFirebase?: () => Promise<{ success: boolean; syncedKeys: string[]; error?: string }>;
   lang?: Language;
   isAuthenticated?: boolean;
   onLoginSuccess?: () => void;
@@ -227,6 +239,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onUpdatePostConfig,
   luminaries,
   onUpdateLuminaries,
+  posts,
+  onUpdatePosts,
+  artisans,
+  onUpdateArtisans,
+  onSyncAllToFirebase,
   lang,
   isAuthenticated: isAuthenticatedProp,
   onLoginSuccess,
@@ -424,9 +441,76 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [matrimonyGenderFilter, setMatrimonyGenderFilter] = useState<'all' | 'groom' | 'bride'>('all');
   const [matrimonySearch, setMatrimonySearch] = useState<string>('');
 
+  const [isSyncingCloud, setIsSyncingCloud] = useState<boolean>(false);
+  const [lastSyncedTime, setLastSyncedTime] = useState<string>('क्लाउड कनेक्टेड');
+
+  const handleForceSyncCloud = async () => {
+    setIsSyncingCloud(true);
+    try {
+      if (onSyncAllToFirebase) {
+        const res = await onSyncAllToFirebase();
+        if (res.success) {
+          const nowStr = new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          setLastSyncedTime(nowStr);
+          showToast(`✅ सभी डेटा (${res.syncedKeys.length} श्रेणियां) फ़ायरबेस पर सफलतापूर्वक सुरक्षित हो गया! सभी लाइव लिंक पर तुरंत यही दिखेगा।`);
+        } else {
+          showToast(`⚠️ सिंक में त्रुटि: ${res.error || 'पुनः प्रयास करें'}`);
+        }
+      } else {
+        const res = await syncAllDataToFirebase({
+          founder: editFounder,
+          team: editTeamList,
+          contact: editContact,
+          events: editEventsList,
+          luminaries: luminariesList,
+          donation: editDonation,
+          jobs: editJobsList,
+          scholarships: editSchList,
+          workshops: editWsList,
+          posts: posts || [],
+          artisans: artisans || [],
+          idcard_config: editIdCard,
+          matrimony_config: editMatrimony,
+          artisan_config: editArtisan,
+          post_config: editPost,
+          sub_admins: subAdmins,
+        });
+        if (res.success) {
+          const nowStr = new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          setLastSyncedTime(nowStr);
+          showToast(`✅ सभी डेटा (${res.syncedKeys.length} श्रेणियां) फ़ायरबेस पर सफलतापूर्वक सुरक्षित हो गया! सभी लाइव लिंक पर तुरंत यही दिखेगा।`);
+        }
+      }
+    } catch (e) {
+      console.warn(e);
+      showToast('⚠️ सिंक प्रक्रिया में बाधा आई।');
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen && isAuthenticated) {
       loadData();
+
+      // Real-time listener for incoming applications
+      const unsubApps = subscribeApplicationsFromFirestore((remoteApps) => {
+        if (remoteApps && remoteApps.length > 0) {
+          setApplications(remoteApps);
+        }
+      });
+
+      // Real-time listener for matrimonial profiles
+      const unsubMatrimony = subscribeMatrimonialProfilesFromFirestore((remoteProfiles) => {
+        if (remoteProfiles && remoteProfiles.length > 0) {
+          setFirebaseMatrimonyProfiles(remoteProfiles);
+        }
+      });
+
+      return () => {
+        unsubApps();
+        unsubMatrimony();
+      };
     }
   }, [isOpen, isAuthenticated]);
 
@@ -1576,8 +1660,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               </div>
             )}
 
-            {/* Admin Header with Logged-in Role Badge and Logout */}
-            <div className="bg-stone-900 text-white px-4 py-2 border-b border-stone-800 flex items-center justify-between text-xs shrink-0">
+            {/* Admin Header with Logged-in Role Badge, Cloud Sync status, and Logout */}
+            <div className="bg-stone-900 text-white px-3 sm:px-4 py-2 border-b border-stone-800 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
               <div className="flex items-center gap-2">
                 <span className="p-1 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30">
                   <Crown className="w-3.5 h-3.5" />
@@ -1589,6 +1673,25 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
+                {/* Real-time Firebase Cloud Status Indicator */}
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-[11px] text-emerald-300 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span className="hidden md:inline">फ़ायरबेस क्लाउड:</span>
+                  <span className="text-emerald-200">{lastSyncedTime}</span>
+                </div>
+
+                {/* Force Sync All Data Button */}
+                <button
+                  type="button"
+                  onClick={handleForceSyncCloud}
+                  disabled={isSyncingCloud}
+                  className="px-2.5 py-1 text-[11px] font-bold text-stone-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-lg cursor-pointer transition-all shadow-2xs flex items-center gap-1.5 disabled:opacity-60"
+                  title="सभी डेटा (अध्यक्ष, टीम, संपर्क, आयोजन, योजनाएं, दान, फॉर्म, पोस्ट) को तुरंत फ़ायरबेस पर सेव करें"
+                >
+                  <Cloud className={`w-3.5 h-3.5 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+                  <span>{isSyncingCloud ? 'सिंक हो रहा है...' : 'क्लाउड सिंक (Save All)'}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {

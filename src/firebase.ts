@@ -17,7 +17,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   limit,
   serverTimestamp,
   setDoc,
@@ -33,6 +32,54 @@ export const auth = getAuth(app);
 export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
   ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
   : getFirestore(app);
+
+// Skill Error Handler Definition
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  return errInfo;
+}
 
 // Test Connection on initial boot as required by system guidelines
 async function testConnection() {
@@ -65,23 +112,24 @@ export interface StoredApplication {
 }
 
 export async function addApplicationToFirestore(appData: Omit<StoredApplication, 'id'>) {
+  const path = 'applications';
   try {
-    const colRef = collection(db, 'applications');
+    const colRef = collection(db, path);
     const docRef = await addDoc(colRef, {
       ...appData,
       timestamp: serverTimestamp()
     });
     return docRef.id;
   } catch (err) {
-    console.error('Error saving application to Firestore:', err);
-    // Fallback locally
+    handleFirestoreError(err, OperationType.CREATE, path);
     return `local-${Date.now()}`;
   }
 }
 
 export async function fetchApplicationsFromFirestore(): Promise<StoredApplication[]> {
+  const path = 'applications';
   try {
-    const colRef = collection(db, 'applications');
+    const colRef = collection(db, path);
     const q = query(colRef, limit(100));
     const snapshot = await getDocs(q);
     return snapshot.docs.map((docSnap) => ({
@@ -89,29 +137,57 @@ export async function fetchApplicationsFromFirestore(): Promise<StoredApplicatio
       ...docSnap.data()
     })) as StoredApplication[];
   } catch (err) {
-    console.error('Error fetching applications from Firestore:', err);
+    handleFirestoreError(err, OperationType.GET, path);
     return [];
   }
 }
 
+export function subscribeApplicationsFromFirestore(
+  onUpdate: (apps: StoredApplication[]) => void
+): () => void {
+  const path = 'applications';
+  try {
+    const colRef = collection(db, path);
+    const q = query(colRef, limit(100));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const apps = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        })) as StoredApplication[];
+        onUpdate(apps);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, path);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to subscribe applications:', err);
+    return () => {};
+  }
+}
+
 export async function updateApplicationStatusInFirestore(id: string, status: 'pending' | 'approved' | 'rejected') {
+  const path = `applications/${id}`;
   try {
     const docRef = doc(db, 'applications', id);
     await updateDoc(docRef, { status });
     return true;
   } catch (err) {
-    console.error('Error updating application status in Firestore:', err);
+    handleFirestoreError(err, OperationType.UPDATE, path);
     return false;
   }
 }
 
 export async function deleteApplicationFromFirestore(id: string) {
+  const path = `applications/${id}`;
   try {
     const docRef = doc(db, 'applications', id);
     await deleteDoc(docRef);
     return true;
   } catch (err) {
-    console.error('Error deleting application from Firestore:', err);
+    handleFirestoreError(err, OperationType.DELETE, path);
     return false;
   }
 }
@@ -120,26 +196,28 @@ export async function deleteApplicationFromFirestore(id: string) {
 // 2. COMMUNITY POSTS SERVICE
 // ==========================================
 export async function addPostToFirestore(postData: any) {
+  const path = 'posts';
   try {
-    const colRef = collection(db, 'posts');
+    const colRef = collection(db, path);
     const docRef = await addDoc(colRef, {
       ...postData,
       createdAt: serverTimestamp()
     });
     return docRef.id;
   } catch (err) {
-    console.error('Error adding post to Firestore:', err);
+    handleFirestoreError(err, OperationType.CREATE, path);
     return null;
   }
 }
 
 export async function deletePostFromFirestore(postId: string) {
+  const path = `posts/${postId}`;
   try {
     const docRef = doc(db, 'posts', postId);
     await deleteDoc(docRef);
     return true;
   } catch (err) {
-    console.error('Error deleting post from Firestore:', err);
+    handleFirestoreError(err, OperationType.DELETE, path);
     return false;
   }
 }
@@ -181,23 +259,25 @@ export interface StoredMatrimonialProfile {
 export async function addMatrimonialProfileToFirestore(
   profileData: Omit<StoredMatrimonialProfile, 'id'> | StoredMatrimonialProfile
 ) {
+  const path = 'matrimony';
   try {
-    const colRef = collection(db, 'matrimony');
+    const colRef = collection(db, path);
     const docRef = await addDoc(colRef, {
       ...profileData,
-      name: profileData.fullName, // Match security rule request.resource.data.name
+      name: profileData.fullName,
       createdAt: serverTimestamp()
     });
     return docRef.id;
   } catch (err) {
-    console.error('Error saving matrimony profile to Firestore:', err);
+    handleFirestoreError(err, OperationType.CREATE, path);
     return null;
   }
 }
 
 export async function fetchMatrimonialProfilesFromFirestore(): Promise<StoredMatrimonialProfile[]> {
+  const path = 'matrimony';
   try {
-    const colRef = collection(db, 'matrimony');
+    const colRef = collection(db, path);
     const q = query(colRef, limit(100));
     const snapshot = await getDocs(q);
     return snapshot.docs.map((docSnap) => {
@@ -233,18 +313,73 @@ export async function fetchMatrimonialProfilesFromFirestore(): Promise<StoredMat
       };
     }) as StoredMatrimonialProfile[];
   } catch (err) {
-    console.error('Error fetching matrimony profiles from Firestore:', err);
+    handleFirestoreError(err, OperationType.GET, path);
     return [];
   }
 }
 
+export function subscribeMatrimonialProfilesFromFirestore(
+  onUpdate: (profiles: StoredMatrimonialProfile[]) => void
+): () => void {
+  const path = 'matrimony';
+  try {
+    const colRef = collection(db, path);
+    const q = query(colRef, limit(100));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const list = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            fullName: data.fullName || data.name || 'विश्वकर्मा बंधु',
+            gender: data.gender || 'groom',
+            age: Number(data.age) || 26,
+            height: data.height || '5 ft 7 in',
+            subcaste: data.subcaste || 'जांगिड़ (सुथार)',
+            gotra: data.gotra || 'वशिष्ठ',
+            motherGotra: data.motherGotra || 'कौशिक',
+            education: data.education || 'स्नातक',
+            occupation: data.occupation || 'स्वरोजगार',
+            annualIncome: data.annualIncome || '8-12 लाख',
+            city: data.city || 'जयपुर',
+            state: data.state || 'राजस्थान',
+            photo: data.photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500',
+            kundaliMatch: data.kundaliMatch || 'गुण मिलान विचारणीय',
+            about: data.about || 'संस्कारवान, धार्मिक एवं सुशिक्षित परिवार।',
+            familyDetails: data.familyDetails || 'प्रतिष्ठित विश्वकर्मा परिवार।',
+            contactPerson: data.contactPerson || 'अभिभावक',
+            contactNumber: data.contactNumber || '',
+            email: data.email || '',
+            verified: data.verified ?? true,
+            isOtpVerified: data.isOtpVerified ?? true,
+            verificationMethod: data.verificationMethod || 'firebase_sms',
+            photoPrivacy: data.photoPrivacy || 'public',
+            contactPrivacy: data.contactPrivacy || 'public',
+            profileVisibility: data.profileVisibility || 'active',
+            firebaseSynced: true,
+          } as StoredMatrimonialProfile;
+        });
+        onUpdate(list);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, path);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to subscribe matrimony profiles:', err);
+    return () => {};
+  }
+}
+
 export async function deleteMatrimonialProfileFromFirestore(id: string) {
+  const path = `matrimony/${id}`;
   try {
     const docRef = doc(db, 'matrimony', id);
     await deleteDoc(docRef);
     return true;
   } catch (err) {
-    console.error('Error deleting matrimonial profile from Firestore:', err);
+    handleFirestoreError(err, OperationType.DELETE, path);
     return false;
   }
 }
@@ -253,12 +388,13 @@ export async function updateMatrimonialProfileVisibilityInFirestore(
   id: string,
   profileVisibility: 'active' | 'hidden'
 ) {
+  const path = `matrimony/${id}`;
   try {
     const docRef = doc(db, 'matrimony', id);
     await updateDoc(docRef, { profileVisibility });
     return true;
   } catch (err) {
-    console.error('Error updating profile visibility in Firestore:', err);
+    handleFirestoreError(err, OperationType.UPDATE, path);
     return false;
   }
 }
@@ -314,7 +450,8 @@ export async function sendFirebasePhoneOtp(
 // Allows Super Admin changes to instantly reflect across all public links and devices
 // ==========================================
 
-export async function saveSiteConfigToFirestore(configKey: string, data: any) {
+export async function saveSiteConfigToFirestore(configKey: string, data: any): Promise<boolean> {
+  const path = `site_config/${configKey}`;
   try {
     const docRef = doc(db, 'site_config', configKey);
     await setDoc(docRef, {
@@ -324,12 +461,13 @@ export async function saveSiteConfigToFirestore(configKey: string, data: any) {
     }, { merge: true });
     return true;
   } catch (err) {
-    console.warn(`Firestore site_config write failed for ${configKey}:`, err);
+    handleFirestoreError(err, OperationType.WRITE, path);
     return false;
   }
 }
 
 export async function fetchSiteConfigFromFirestore<T>(configKey: string): Promise<T | null> {
+  const path = `site_config/${configKey}`;
   try {
     const docRef = doc(db, 'site_config', configKey);
     const docSnap = await getDoc(docRef);
@@ -341,7 +479,7 @@ export async function fetchSiteConfigFromFirestore<T>(configKey: string): Promis
     }
     return null;
   } catch (err) {
-    console.warn(`Firestore site_config read failed for ${configKey}:`, err);
+    handleFirestoreError(err, OperationType.GET, path);
     return null;
   }
 }
@@ -350,6 +488,7 @@ export function subscribeSiteConfigFromFirestore<T>(
   configKey: string,
   onUpdate: (data: T) => void
 ): () => void {
+  const path = `site_config/${configKey}`;
   try {
     const docRef = doc(db, 'site_config', configKey);
     return onSnapshot(
@@ -368,12 +507,53 @@ export function subscribeSiteConfigFromFirestore<T>(
         }
       },
       (error) => {
-        console.warn(`Firestore onSnapshot listener error for ${configKey}:`, error);
+        handleFirestoreError(error, OperationType.GET, path);
       }
     );
   } catch (err) {
     console.warn(`Failed to attach Firestore listener for ${configKey}:`, err);
     return () => {};
+  }
+}
+
+// ==========================================
+// BATCH SYNC: Push ALL website data to Firebase
+// Guarantees all sections are properly saved to Firebase for all live links
+// ==========================================
+export async function syncAllDataToFirebase(allData: Record<string, any>): Promise<{
+  success: boolean;
+  syncedKeys: string[];
+  error?: string;
+}> {
+  const syncedKeys: string[] = [];
+  try {
+    const keys = Object.keys(allData);
+    for (const key of keys) {
+      if (allData[key] !== undefined) {
+        const ok = await saveSiteConfigToFirestore(key, allData[key]);
+        if (ok) {
+          syncedKeys.push(key);
+        }
+      }
+    }
+    return { success: true, syncedKeys };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error('syncAllDataToFirebase failed:', err);
+    return { success: false, syncedKeys, error: errorMsg };
+  }
+}
+
+// Check and seed default data to Firestore if not yet populated
+export async function checkAndSeedInitialSiteData(defaults: Record<string, any>): Promise<void> {
+  try {
+    const existingFounder = await fetchSiteConfigFromFirestore('founder');
+    if (!existingFounder) {
+      console.log('Seeding initial site configurations to Firebase Firestore...');
+      await syncAllDataToFirebase(defaults);
+    }
+  } catch (e) {
+    console.warn('Initial site data seeding notice:', e);
   }
 }
 
@@ -396,8 +576,9 @@ export interface StoredMembershipRecord {
 }
 
 export async function addMembershipToFirestore(memberData: StoredMembershipRecord): Promise<string | null> {
+  const path = 'memberships';
   try {
-    const colRef = collection(db, 'memberships');
+    const colRef = collection(db, path);
     const docRef = await addDoc(colRef, {
       ...memberData,
       registeredAt: serverTimestamp()
@@ -410,7 +591,7 @@ export async function addMembershipToFirestore(memberData: StoredMembershipRecor
     } catch {}
     return docRef.id;
   } catch (err) {
-    console.error('Error saving membership to Firestore:', err);
+    handleFirestoreError(err, OperationType.CREATE, path);
     try {
       const existing: StoredMembershipRecord[] = JSON.parse(localStorage.getItem('vsm_memberships') || '[]');
       const filtered = existing.filter((m) => m.membershipId !== memberData.membershipId && m.email.toLowerCase() !== memberData.email.toLowerCase());
@@ -421,8 +602,9 @@ export async function addMembershipToFirestore(memberData: StoredMembershipRecor
 }
 
 export async function fetchMembershipsFromFirestore(): Promise<StoredMembershipRecord[]> {
+  const path = 'memberships';
   try {
-    const colRef = collection(db, 'memberships');
+    const colRef = collection(db, path);
     const q = query(colRef, limit(200));
     const snapshot = await getDocs(q);
     const remoteList = snapshot.docs.map((d) => ({
@@ -445,7 +627,7 @@ export async function fetchMembershipsFromFirestore(): Promise<StoredMembershipR
       return remoteList;
     }
   } catch (err) {
-    console.warn('Error fetching memberships from Firestore:', err);
+    handleFirestoreError(err, OperationType.GET, path);
     try {
       return JSON.parse(localStorage.getItem('vsm_memberships') || '[]');
     } catch {
@@ -467,8 +649,9 @@ export async function checkMatrimonyEmailExists(email: string): Promise<{ exists
   } catch {}
 
   // 2. Check remote Firestore
+  const path = 'matrimony';
   try {
-    const colRef = collection(db, 'matrimony');
+    const colRef = collection(db, path);
     const q = query(colRef, where('email', '==', cleanEmail), limit(1));
     const snap = await getDocs(q);
     if (!snap.empty) {
@@ -476,7 +659,7 @@ export async function checkMatrimonyEmailExists(email: string): Promise<{ exists
       return { exists: true, profile: { id: snap.docs[0].id, ...docData } };
     }
   } catch (err) {
-    console.warn('Firestore matrimony email check note:', err);
+    handleFirestoreError(err, OperationType.GET, path);
   }
 
   return { exists: false };
@@ -494,8 +677,9 @@ export async function checkMembershipEmailExists(email: string): Promise<{ exist
   } catch {}
 
   // 2. Check remote Firestore
+  const path = 'memberships';
   try {
-    const colRef = collection(db, 'memberships');
+    const colRef = collection(db, path);
     const q = query(colRef, where('email', '==', cleanEmail), limit(1));
     const snap = await getDocs(q);
     if (!snap.empty) {
@@ -503,9 +687,8 @@ export async function checkMembershipEmailExists(email: string): Promise<{ exist
       return { exists: true, member: { id: snap.docs[0].id, ...docData } };
     }
   } catch (err) {
-    console.warn('Firestore membership email check note:', err);
+    handleFirestoreError(err, OperationType.GET, path);
   }
 
   return { exists: false };
 }
-

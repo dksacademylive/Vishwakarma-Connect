@@ -5,6 +5,7 @@ import { MATRIMONIAL_PROFILES } from '../data/mockData';
 import {
   addMatrimonialProfileToFirestore,
   fetchMatrimonialProfilesFromFirestore,
+  subscribeMatrimonialProfilesFromFirestore,
   setupRecaptcha,
   sendFirebasePhoneOtp,
   checkMatrimonyEmailExists,
@@ -116,10 +117,12 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
 
   const [newProfileForm, setNewProfileForm] = useState(initialFormState);
 
-  // Load Matrimony Profiles from Firebase Firestore on boot
+  // Load and Real-Time Subscribe Matrimony Profiles from Firebase Firestore
   useEffect(() => {
     let isMounted = true;
     setIsFirebaseLoading(true);
+
+    // Initial fetch
     fetchMatrimonialProfilesFromFirestore()
       .then((remoteList) => {
         if (isMounted && remoteList && remoteList.length > 0) {
@@ -139,8 +142,24 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
         if (isMounted) setIsFirebaseLoading(false);
       });
 
+    // Real-time listener for instant updates across all public visitors & live links
+    const unsubscribe = subscribeMatrimonialProfilesFromFirestore((remoteList) => {
+      if (isMounted && remoteList && remoteList.length > 0) {
+        setProfiles((prev) => {
+          const remoteIds = new Set(remoteList.map((r) => r.id));
+          const uniquePrev = prev.filter((p) => !remoteIds.has(p.id));
+          const combined = [...(remoteList as MatrimonialProfile[]), ...uniquePrev];
+          try {
+            localStorage.setItem('vsm_matrimonial_profiles', JSON.stringify(combined));
+          } catch (e) {}
+          return combined;
+        });
+      }
+    });
+
     return () => {
       isMounted = false;
+      unsubscribe();
     };
   }, []);
 

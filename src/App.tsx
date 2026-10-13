@@ -17,7 +17,9 @@ import {
 } from './types';
 import {
   subscribeSiteConfigFromFirestore,
-  saveSiteConfigToFirestore
+  saveSiteConfigToFirestore,
+  syncAllDataToFirebase,
+  checkAndSeedInitialSiteData
 } from './firebase';
 import { INITIAL_POSTS, ARTISANS_DATA, UPCOMING_EVENTS } from './data/mockData';
 import { HALL_OF_FAME_DATA, HallOfFamePerson, FOUNDER_DATA, TEAM_MEMBERS, FounderInfo, TeamMember } from './data/homeData';
@@ -54,8 +56,22 @@ import { Footer } from './components/Footer';
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [lang, setLang] = useState<Language>('hi');
-  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
-  const [artisans, setArtisans] = useState<Artisan[]>(ARTISANS_DATA);
+  const [posts, setPosts] = useState<Post[]>(() => {
+    try {
+      const saved = localStorage.getItem('vsm_posts');
+      return saved ? JSON.parse(saved) : INITIAL_POSTS;
+    } catch {
+      return INITIAL_POSTS;
+    }
+  });
+  const [artisans, setArtisans] = useState<Artisan[]>(() => {
+    try {
+      const saved = localStorage.getItem('vsm_artisans');
+      return saved ? JSON.parse(saved) : ARTISANS_DATA;
+    } catch {
+      return ARTISANS_DATA;
+    }
+  });
   const [events, setEvents] = useState<SamajEvent[]>(() => {
     try {
       const saved = localStorage.getItem('vsm_events');
@@ -226,6 +242,25 @@ export default function App() {
 
   // REAL-TIME FIRESTORE SYNCHRONIZATION (Global Live Sync Across Public Devices & Links)
   useEffect(() => {
+    // 1. Initial check and seed to Firestore so fresh database is immediately filled!
+    checkAndSeedInitialSiteData({
+      founder: FOUNDER_DATA,
+      team: TEAM_MEMBERS,
+      contact: orgContact,
+      events: UPCOMING_EVENTS,
+      luminaries: HALL_OF_FAME_DATA,
+      donation: DEFAULT_DONATION_CONFIG,
+      jobs: DEFAULT_JOBS,
+      scholarships: DEFAULT_SCHOLARSHIPS,
+      workshops: DEFAULT_WORKSHOPS,
+      posts: INITIAL_POSTS,
+      artisans: ARTISANS_DATA,
+      idcard_config: DEFAULT_IDCARD_CONFIG,
+      matrimony_config: DEFAULT_MATRIMONY_CONFIG,
+      artisan_config: DEFAULT_ARTISAN_CONFIG,
+      post_config: DEFAULT_POST_CONFIG,
+    });
+
     const unsubEvents = subscribeSiteConfigFromFirestore<SamajEvent[]>('events', (data) => {
       if (Array.isArray(data) && data.length > 0) {
         setEvents(data);
@@ -317,6 +352,20 @@ export default function App() {
       }
     });
 
+    const unsubPosts = subscribeSiteConfigFromFirestore<Post[]>('posts', (data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setPosts(data);
+        localStorage.setItem('vsm_posts', JSON.stringify(data));
+      }
+    });
+
+    const unsubArtisans = subscribeSiteConfigFromFirestore<Artisan[]>('artisans', (data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setArtisans(data);
+        localStorage.setItem('vsm_artisans', JSON.stringify(data));
+      }
+    });
+
     return () => {
       unsubEvents();
       unsubLuminaries();
@@ -331,13 +380,15 @@ export default function App() {
       unsubMatrimony();
       unsubArtisan();
       unsubPost();
+      unsubPosts();
+      unsubArtisans();
     };
   }, []);
 
-  // Like a post
+  // Handlers that update both local memory and Firebase Firestore in real-time
   const handleLikePost = (postId: string) => {
-    setPosts((prev) =>
-      prev.map((post) => {
+    setPosts((prev) => {
+      const updated = prev.map((post) => {
         if (post.id === postId) {
           const isLiked = !post.isLiked;
           return {
@@ -347,14 +398,20 @@ export default function App() {
           };
         }
         return post;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('vsm_posts', JSON.stringify(updated));
+        saveSiteConfigToFirestore('posts', updated);
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
   };
 
-  // Add a comment to a post
   const handleAddComment = (postId: string, commentText: string) => {
-    setPosts((prev) =>
-      prev.map((post) => {
+    setPosts((prev) => {
+      const updated = prev.map((post) => {
         if (post.id === postId) {
           const newComment = {
             id: `cmt-${Date.now()}`,
@@ -370,21 +427,63 @@ export default function App() {
           };
         }
         return post;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('vsm_posts', JSON.stringify(updated));
+        saveSiteConfigToFirestore('posts', updated);
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
   };
 
-  // Add a new post
   const handleAddPost = (newPost: Post) => {
-    setPosts((prev) => [newPost, ...prev]);
+    setPosts((prev) => {
+      const updated = [newPost, ...prev];
+      try {
+        localStorage.setItem('vsm_posts', JSON.stringify(updated));
+        saveSiteConfigToFirestore('posts', updated);
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
   };
 
-  // Add a new artisan to directory
+  const handleUpdatePosts = (newPosts: Post[]) => {
+    setPosts(newPosts);
+    try {
+      localStorage.setItem('vsm_posts', JSON.stringify(newPosts));
+      saveSiteConfigToFirestore('posts', newPosts);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
   const handleAddArtisan = (newArtisan: Artisan) => {
-    setArtisans((prev) => [newArtisan, ...prev]);
+    setArtisans((prev) => {
+      const updated = [newArtisan, ...prev];
+      try {
+        localStorage.setItem('vsm_artisans', JSON.stringify(updated));
+        saveSiteConfigToFirestore('artisans', updated);
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
   };
 
-  // Add a new event
+  const handleUpdateArtisans = (newArtisans: Artisan[]) => {
+    setArtisans(newArtisans);
+    try {
+      localStorage.setItem('vsm_artisans', JSON.stringify(newArtisans));
+      saveSiteConfigToFirestore('artisans', newArtisans);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
   const handleAddEvent = (newEvent: SamajEvent) => {
     setEvents((prev) => {
       const updated = [newEvent, ...prev];
@@ -398,7 +497,16 @@ export default function App() {
     });
   };
 
-  // Add a new luminary / amar shilpi
+  const handleUpdateEvents = (newEvents: SamajEvent[]) => {
+    setEvents(newEvents);
+    try {
+      localStorage.setItem('vsm_events', JSON.stringify(newEvents));
+      saveSiteConfigToFirestore('events', newEvents);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
   const handleAddLuminary = (newLuminary: HallOfFamePerson) => {
     setLuminaries((prev) => {
       const updated = [newLuminary, ...prev];
@@ -422,6 +530,137 @@ export default function App() {
     }
   };
 
+  const handleUpdateFounderData = (newData: FounderInfo) => {
+    setFounderData(newData);
+    try {
+      localStorage.setItem('vsm_founder', JSON.stringify(newData));
+      saveSiteConfigToFirestore('founder', newData);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdateTeamMembers = (newTeam: TeamMember[]) => {
+    setTeamMembers(newTeam);
+    try {
+      localStorage.setItem('vsm_team', JSON.stringify(newTeam));
+      saveSiteConfigToFirestore('team', newTeam);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdateOrgContact = (newContact: OrgContactInfo) => {
+    setOrgContact(newContact);
+    try {
+      localStorage.setItem('vsm_contact', JSON.stringify(newContact));
+      saveSiteConfigToFirestore('contact', newContact);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdateJobs = (newJobs: JobItem[]) => {
+    setJobs(newJobs);
+    try {
+      localStorage.setItem('vsm_jobs', JSON.stringify(newJobs));
+      saveSiteConfigToFirestore('jobs', newJobs);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdateScholarships = (newSch: ScholarshipItem[]) => {
+    setScholarships(newSch);
+    try {
+      localStorage.setItem('vsm_scholarships', JSON.stringify(newSch));
+      saveSiteConfigToFirestore('scholarships', newSch);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdateWorkshops = (newWs: WorkshopItem[]) => {
+    setWorkshops(newWs);
+    try {
+      localStorage.setItem('vsm_workshops', JSON.stringify(newWs));
+      saveSiteConfigToFirestore('workshops', newWs);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdateDonationConfig = (cfg: DonationConfig) => {
+    setDonationConfig(cfg);
+    try {
+      localStorage.setItem('vsm_donation', JSON.stringify(cfg));
+      saveSiteConfigToFirestore('donation', cfg);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdateIdCardConfig = (cfg: IdCardFormConfig) => {
+    setIdCardConfig(cfg);
+    try {
+      localStorage.setItem('vsm_idcard_config', JSON.stringify(cfg));
+      saveSiteConfigToFirestore('idcard_config', cfg);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdateMatrimonyConfig = (cfg: MatrimonyFormConfig) => {
+    setMatrimonyConfig(cfg);
+    try {
+      localStorage.setItem('vsm_matrimony_config', JSON.stringify(cfg));
+      saveSiteConfigToFirestore('matrimony_config', cfg);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdateArtisanConfig = (cfg: ArtisanFormConfig) => {
+    setArtisanConfig(cfg);
+    try {
+      localStorage.setItem('vsm_artisan_config', JSON.stringify(cfg));
+      saveSiteConfigToFirestore('artisan_config', cfg);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdatePostConfig = (cfg: PostFormConfig) => {
+    setPostConfig(cfg);
+    try {
+      localStorage.setItem('vsm_post_config', JSON.stringify(cfg));
+      saveSiteConfigToFirestore('post_config', cfg);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  // Force Synchronize ALL current data to Firebase Firestore
+  const handleForceSyncAllDataToFirebase = async () => {
+    return await syncAllDataToFirebase({
+      founder: founderData,
+      team: teamMembers,
+      contact: orgContact,
+      events: events,
+      luminaries: luminaries,
+      donation: donationConfig,
+      jobs: jobs,
+      scholarships: scholarships,
+      workshops: workshops,
+      posts: posts,
+      artisans: artisans,
+      idcard_config: idCardConfig,
+      matrimony_config: matrimonyConfig,
+      artisan_config: artisanConfig,
+      post_config: postConfig,
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-stone-50 font-sans selection:bg-amber-100 selection:text-amber-900">
       {/* Top Navbar */}
@@ -440,7 +679,7 @@ export default function App() {
 
       {/* Prominent Admin Mode Banner: ONLY visible when Admin is logged in */}
       {isAdminLoggedIn && (
-        <div className="bg-stone-900 text-amber-200 border-b border-amber-600/50 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs font-semibold z-30 sticky top-[88px] lg:top-16 shadow-md font-hindi animate-fadeIn">
+        <div className="bg-stone-900 text-amber-200 border-b border-amber-600/50 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs font-semibold z-30 sticky top-[94px] lg:top-[108px] shadow-md font-hindi animate-fadeIn">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span className="text-amber-300 font-bold text-xs sm:text-sm">
@@ -598,32 +837,37 @@ export default function App() {
         onClose={() => setIsAdminOpen(false)}
         initialTab={adminInitialTab}
         founderData={founderData}
-        onUpdateFounderData={(newData) => setFounderData(newData)}
+        onUpdateFounderData={handleUpdateFounderData}
         teamMembers={teamMembers}
-        onUpdateTeamMembers={(newTeam) => setTeamMembers(newTeam)}
+        onUpdateTeamMembers={handleUpdateTeamMembers}
         orgContact={orgContact}
-        onUpdateOrgContact={(newContact) => setOrgContact(newContact)}
+        onUpdateOrgContact={handleUpdateOrgContact}
         events={events}
-        onUpdateEvents={(newEvents) => setEvents(newEvents)}
+        onUpdateEvents={handleUpdateEvents}
         jobs={jobs}
-        onUpdateJobs={(newJobs) => setJobs(newJobs)}
+        onUpdateJobs={handleUpdateJobs}
         scholarships={scholarships}
-        onUpdateScholarships={(newSch) => setScholarships(newSch)}
+        onUpdateScholarships={handleUpdateScholarships}
         workshops={workshops}
-        onUpdateWorkshops={(newWs) => setWorkshops(newWs)}
+        onUpdateWorkshops={handleUpdateWorkshops}
         donationConfig={donationConfig}
-        onUpdateDonationConfig={(cfg) => setDonationConfig(cfg)}
+        onUpdateDonationConfig={handleUpdateDonationConfig}
         onOpenDonateModal={() => setIsDonateOpen(true)}
         idCardConfig={idCardConfig}
-        onUpdateIdCardConfig={(cfg) => setIdCardConfig(cfg)}
+        onUpdateIdCardConfig={handleUpdateIdCardConfig}
         matrimonyConfig={matrimonyConfig}
-        onUpdateMatrimonyConfig={(cfg) => setMatrimonyConfig(cfg)}
+        onUpdateMatrimonyConfig={handleUpdateMatrimonyConfig}
         artisanConfig={artisanConfig}
-        onUpdateArtisanConfig={(cfg) => setArtisanConfig(cfg)}
+        onUpdateArtisanConfig={handleUpdateArtisanConfig}
         postConfig={postConfig}
-        onUpdatePostConfig={(cfg) => setPostConfig(cfg)}
+        onUpdatePostConfig={handleUpdatePostConfig}
         luminaries={luminaries}
         onUpdateLuminaries={handleUpdateLuminaries}
+        posts={posts}
+        onUpdatePosts={handleUpdatePosts}
+        artisans={artisans}
+        onUpdateArtisans={handleUpdateArtisans}
+        onSyncAllToFirebase={handleForceSyncAllDataToFirebase}
         lang={lang}
         isAuthenticated={isAdminLoggedIn}
         onLoginSuccess={handleAdminLoginSuccess}

@@ -106,34 +106,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
-            {/* Zone 2 (Desktop / Laptop only): All Navigation links in ONE continuous STRAIGHT LINE */}
-            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 text-xs xl:text-[13px] font-medium text-stone-700 overflow-x-auto scrollbar-none flex-1 min-w-0 justify-center px-2 py-1">
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleTabClick(item.id)}
-                    className={`flex items-center gap-1 px-2.5 xl:px-3 py-1.5 rounded-xl transition-all relative focus:outline-none cursor-pointer whitespace-nowrap shrink-0 ${
-                      isActive
-                        ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300 shadow-2xs'
-                        : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/90 font-medium'
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-amber-800' : 'text-stone-500'}`} />
-                    <span>{isHi ? item.hiLabel : item.enLabel}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Zone 3: Action Buttons (Always visible in straight line on all screens) */}
-            <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 shrink-0 z-20 flex-nowrap">
+            {/* Action Buttons (Always visible in straight line on all screens) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 z-20 flex-nowrap">
               {/* Language Switcher */}
               <button
                 onClick={() => setLang(isHi ? 'en' : 'hi')}
-                className="px-2 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg sm:rounded-xl transition-colors shrink-0 whitespace-nowrap cursor-pointer border border-stone-200"
+                className="px-2.5 py-1 sm:py-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg sm:rounded-xl transition-colors shrink-0 whitespace-nowrap cursor-pointer border border-stone-200 shadow-2xs"
                 title="भाषा बदलें (Change Language)"
               >
                 {isHi ? 'Eng' : 'हिंदी'}
@@ -141,10 +119,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Admin Button */}
               {isAdminLoggedIn ? (
-                <div className="flex items-center gap-1 shrink-0 flex-nowrap">
+                <div className="flex items-center gap-1.5 shrink-0 flex-nowrap">
                   <button
                     onClick={onOpenAdmin}
-                    className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
                     title={isHi ? 'केंद्रीय एडमिन कंट्रोल पैनल' : 'Master Admin Suite'}
                   >
                     <ShieldCheck className="w-3.5 h-3.5 text-amber-950 shrink-0" />
@@ -153,11 +131,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {onLogoutAdmin && (
                     <button
                       onClick={onLogoutAdmin}
-                      className="p-1 sm:px-2 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg sm:rounded-xl transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                      className="p-1 sm:px-2.5 sm:py-1.5 text-xs font-semibold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg sm:rounded-xl transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                       title={isHi ? 'एडमिन मोड से लॉगआउट करें' : 'Logout'}
                     >
-                      <LogOut className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                      <span className="hidden xl:inline">{isHi ? 'लॉगआउट' : 'Exit'}</span>
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{isHi ? 'लॉगआउट' : 'Exit'}</span>
                     </button>
                   )}
                 </div>
@@ -165,10 +143,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onOpenAdmin && (
                   <button
                     onClick={onOpenAdmin}
-                    className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
                     title={isHi ? 'सुरक्षित एडमिन प्रमाणीकरण (dksacademy.live@gmail.com / 7045377303)' : 'Protected Admin Access'}
                   >
-                    <Lock className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-stone-600 shrink-0" />
+                    <Lock className="w-3.5 h-3.5 text-stone-600 shrink-0" />
                     <span>{isHi ? '🔒 एडमिन' : '🔒 Admin'}</span>
                   </button>
                 )
@@ -178,10 +156,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenDonate}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-white bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 hover:from-red-500 hover:to-amber-700 active:scale-95 rounded-lg sm:rounded-xl shadow-xs transition-all whitespace-nowrap cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 hover:from-red-500 hover:to-amber-700 active:scale-95 rounded-lg sm:rounded-xl shadow-xs transition-all whitespace-nowrap cursor-pointer shrink-0"
                 title={isHi ? 'विश्वकर्मा सहायता प्रकोष्ठ में सहयोग / दान करें' : 'Donate to Samaj Relief Fund'}
               >
-                <Heart className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-white fill-white shrink-0" />
+                <Heart className="w-3.5 h-3.5 text-white fill-white shrink-0" />
                 <span>{isHi ? 'सहयोग' : 'Donate'}</span>
               </button>
 
@@ -189,44 +167,47 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
-                className="lg:hidden p-1 sm:p-1.5 rounded-lg text-stone-700 hover:bg-stone-100 border border-stone-200 transition-colors focus:outline-none cursor-pointer shrink-0"
+                className="lg:hidden p-1.5 rounded-lg text-stone-700 hover:bg-stone-100 border border-stone-200 transition-colors focus:outline-none cursor-pointer shrink-0"
                 title={mobileMenuOpen ? 'मेनू बंद करें' : 'संपूर्ण मेनू सूची खोलें'}
                 aria-label="Toggle Mobile Menu"
               >
                 {mobileMenuOpen ? (
-                  <X className="w-4 h-4 sm:w-5 sm:h-5 text-amber-900" />
+                  <X className="w-5 h-5 text-amber-900" />
                 ) : (
-                  <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-800" />
+                  <Menu className="w-5 h-5 text-stone-800" />
                 )}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Zone 2 (Mobile & Tablet): Dedicated Full-Width Horizontal Scroll Navigation Strip */}
-        {/* 100% visible on mobile, never squeezed, never hidden! */}
-        <div className="lg:hidden w-full border-t border-stone-200/90 bg-stone-50/95 backdrop-blur-sm px-2 py-1.5 overflow-x-auto scrollbar-none shadow-2xs">
-          <nav className="flex items-center gap-1.5 text-xs font-medium text-stone-700 flex-nowrap w-max min-w-full">
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  ref={isActive ? activeTabMobileRef : null}
-                  onClick={() => handleTabClick(item.id)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all focus:outline-none cursor-pointer whitespace-nowrap shrink-0 ${
-                    isActive
-                      ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300 shadow-2xs ring-1 ring-amber-400/40'
-                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 font-medium border border-transparent'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-amber-800' : 'text-stone-500'}`} />
-                  <span>{isHi ? item.hiLabel : item.enLabel}</span>
-                </button>
-              );
-            })}
-          </nav>
+        {/* Dedicated Navigation Strip (नीचे की स्ट्रिप - Niche Strip) */}
+        {/* On desktop (lg+): Beautiful, spacious, clear tabs with plenty of room so NO pages are hidden */}
+        {/* On mobile (<lg): Same smooth horizontal-scrolling strip as before (preserved 100% for mobile) */}
+        <div className="w-full border-t border-stone-200/90 bg-stone-50/95 lg:bg-stone-100/90 backdrop-blur-sm px-2.5 sm:px-4 lg:px-8 py-1.5 lg:py-2 overflow-x-auto scrollbar-none shadow-2xs">
+          <div className="max-w-[1536px] mx-auto">
+            <nav className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 text-xs lg:text-[13px] font-medium text-stone-700 flex-nowrap lg:flex-wrap lg:justify-center w-max min-w-full lg:w-full">
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    ref={isActive ? activeTabMobileRef : null}
+                    onClick={() => handleTabClick(item.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 lg:py-2 rounded-lg lg:rounded-xl transition-all focus:outline-none cursor-pointer whitespace-nowrap shrink-0 ${
+                      isActive
+                        ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300 shadow-2xs ring-1 ring-amber-400/40'
+                        : 'text-stone-700 hover:text-stone-950 hover:bg-white/90 lg:hover:bg-white font-medium border border-transparent hover:border-stone-200 shadow-2xs hover:shadow-xs'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0 ${isActive ? 'text-amber-800' : 'text-stone-500'}`} />
+                    <span className="font-hindi tracking-wide">{isHi ? item.hiLabel : item.enLabel}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
         </div>
 
         {/* Mobile Dropdown Drawer for Instant Section Jumping (< lg) */}
