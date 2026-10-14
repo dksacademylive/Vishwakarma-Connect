@@ -87,31 +87,31 @@ export const Navbar: React.FC<NavbarProps> = ({
     <>
       <header className="sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-stone-200/90 shadow-2xs transition-all">
         {/* Top Header Bar */}
-        <div className="max-w-[1536px] mx-auto px-2.5 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-13 sm:h-15 lg:h-16 flex-nowrap gap-2 w-full">
+        <div className="max-w-[1536px] mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-13 sm:h-15 lg:h-16 flex-nowrap gap-1.5 sm:gap-2 w-full">
             
             {/* Zone 1: Brand title & Emblem */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2.5 shrink-0 min-w-0">
               <button
                 onClick={() => handleTabClick('home')}
-                className="text-left group cursor-pointer focus:outline-none flex items-center gap-1.5"
+                className="text-left group cursor-pointer focus:outline-none flex items-center gap-1 sm:gap-1.5 shrink-0"
                 title="विश्वकर्मा समाज मुख्य पृष्ठ"
               >
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white shadow-2xs shrink-0 group-hover:scale-105 transition-transform">
-                  <Sparkles className="w-4 h-4 text-amber-100" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white shadow-2xs shrink-0 group-hover:scale-105 transition-transform">
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-100" />
                 </div>
-                <span className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight text-amber-900 group-hover:text-amber-800 transition-colors font-display whitespace-nowrap block">
+                <span className="text-sm sm:text-xl lg:text-2xl font-bold tracking-tight text-amber-900 group-hover:text-amber-800 transition-colors font-display whitespace-nowrap block">
                   {isHi ? 'विश्वकर्मा समाज' : 'Vishwakarma Samaj'}
                 </span>
               </button>
             </div>
 
-            {/* Action Buttons (Always visible in straight line on all screens) */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 z-20 flex-nowrap">
+            {/* Action Buttons (Always visible in straight line on all screens - Donate button 100% visible on mobile) */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0 z-20 flex-nowrap">
               {/* Language Switcher */}
               <button
                 onClick={() => setLang(isHi ? 'en' : 'hi')}
-                className="px-2.5 py-1 sm:py-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg sm:rounded-xl transition-colors shrink-0 whitespace-nowrap cursor-pointer border border-stone-200 shadow-2xs"
+                className="px-1.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg sm:rounded-xl transition-colors shrink-0 whitespace-nowrap cursor-pointer border border-stone-200 shadow-2xs"
                 title="भाषा बदलें (Change Language)"
               >
                 {isHi ? 'Eng' : 'हिंदी'}
@@ -119,14 +119,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Admin Button */}
               {isAdminLoggedIn ? (
-                <div className="flex items-center gap-1.5 shrink-0 flex-nowrap">
+                <div className="flex items-center gap-1 shrink-0 flex-nowrap">
                   <button
                     onClick={onOpenAdmin}
-                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+                    className="flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 hover:from-amber-200 hover:to-amber-300 border border-amber-500 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
                     title={isHi ? 'केंद्रीय एडमिन कंट्रोल पैनल' : 'Master Admin Suite'}
                   >
                     <ShieldCheck className="w-3.5 h-3.5 text-amber-950 shrink-0" />
-                    <span>{isHi ? '👑 एडमिन' : '👑 Admin'}</span>
+                    <span className="hidden min-[420px]:inline sm:inline">{isHi ? '👑 एडमिन' : '👑 Admin'}</span>
                   </button>
                   {onLogoutAdmin && (
                     <button
@@ -143,20 +143,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onOpenAdmin && (
                   <button
                     onClick={onOpenAdmin}
-                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+                    className="flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
                     title={isHi ? 'सुरक्षित एडमिन प्रमाणीकरण (dksacademy.live@gmail.com / 7045377303)' : 'Protected Admin Access'}
                   >
                     <Lock className="w-3.5 h-3.5 text-stone-600 shrink-0" />
-                    <span>{isHi ? '🔒 एडमिन' : '🔒 Admin'}</span>
+                    <span className="hidden min-[420px]:inline sm:inline">{isHi ? 'एडमिन' : 'Admin'}</span>
                   </button>
                 )
               )}
 
-              {/* Sahyog / Dan Button */}
+              {/* Sahyog / Dan Button (100% visible on right top corner on ALL screens: PC, Tablet, Mobile) */}
               <button
                 type="button"
                 onClick={onOpenDonate}
-                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 hover:from-red-500 hover:to-amber-700 active:scale-95 rounded-lg sm:rounded-xl shadow-xs transition-all whitespace-nowrap cursor-pointer shrink-0"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1 sm:py-1.5 text-xs sm:text-xs font-bold text-white bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 hover:from-red-500 hover:to-amber-700 active:scale-95 rounded-lg sm:rounded-xl shadow-xs transition-all whitespace-nowrap cursor-pointer shrink-0"
                 title={isHi ? 'विश्वकर्मा सहायता प्रकोष्ठ में सहयोग / दान करें' : 'Donate to Samaj Relief Fund'}
               >
                 <Heart className="w-3.5 h-3.5 text-white fill-white shrink-0" />
@@ -167,7 +167,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
-                className="lg:hidden p-1.5 rounded-lg text-stone-700 hover:bg-stone-100 border border-stone-200 transition-colors focus:outline-none cursor-pointer shrink-0"
+                className="lg:hidden p-1 sm:p-1.5 rounded-lg text-stone-700 hover:bg-stone-100 border border-stone-200 transition-colors focus:outline-none cursor-pointer shrink-0"
                 title={mobileMenuOpen ? 'मेनू बंद करें' : 'संपूर्ण मेनू सूची खोलें'}
                 aria-label="Toggle Mobile Menu"
               >
@@ -284,12 +284,15 @@ export const Navbar: React.FC<NavbarProps> = ({
       <button
         type="button"
         onClick={onOpenDonate}
-        className="fixed bottom-6 right-4 sm:right-6 z-40 bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 hover:from-red-500 hover:to-amber-700 text-white text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-full shadow-2xl flex items-center gap-1.5 sm:gap-2 ring-2 ring-white/90 active:scale-95 hover:scale-105 transition-all cursor-pointer"
+        style={{
+          bottom: 'max(1.25rem, calc(0.75rem + env(safe-area-inset-bottom, 0px)))',
+        }}
+        className="fixed sm:bottom-6 right-3 sm:right-6 z-[45] bg-gradient-to-r from-red-600 via-amber-700 to-amber-800 hover:from-red-500 hover:to-amber-700 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 sm:py-3 rounded-full shadow-2xl flex items-center gap-1.5 sm:gap-2 ring-2 ring-white/95 active:scale-95 hover:scale-105 transition-all cursor-pointer pointer-events-auto touch-manipulation whitespace-nowrap shrink-0"
         title={isHi ? 'विश्वकर्मा सहायता प्रकोष्ठ में सहयोग / दान करें' : 'Donate to Samaj Relief Fund'}
         aria-label="Sahyog ya Dan"
       >
-        <Heart className="w-4 h-4 text-white fill-white animate-pulse shrink-0" />
-        <span className="font-hindi">{isHi ? 'सहयोग / दान' : 'सहयोग करें'}</span>
+        <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white fill-white animate-pulse shrink-0" />
+        <span className="font-hindi tracking-wide">{isHi ? 'सहयोग / दान' : 'सहयोग करें'}</span>
       </button>
     </>
   );
