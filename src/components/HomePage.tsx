@@ -97,9 +97,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                       <div className="text-[10px] text-stone-500">{isHi ? 'महोत्सव व सम्मेलन' : 'Conferences & Festivals'}</div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300">
-                    {isHi ? 'महोत्सव 2026' : 'Festival 2026'}
-                  </span>
                 </div>
 
                 <div className="space-y-3.5">
