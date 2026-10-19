@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Post, Language, NavTab, OrgContactInfo } from '../types';
+import { Post, Language, NavTab, OrgContactInfo, Artisan, SamajEvent } from '../types';
 import { HeroBanner } from './HeroBanner';
 import { HomeEnhancements } from './HomeEnhancements';
 import { DonationModal } from './DonationModal';
 import { UPCOMING_EVENTS, ARTISANS_DATA } from '../data/mockData';
-import { SamajEvent } from '../types';
-import { FounderInfo, TeamMember } from '../data/homeData';
+import { FounderInfo, TeamMember, HallOfFamePerson } from '../data/homeData';
 import {
   Heart,
   Calendar,
@@ -26,6 +25,8 @@ import {
 interface HomePageProps {
   posts: Post[];
   events: SamajEvent[];
+  artisans?: Artisan[];
+  luminaries?: HallOfFamePerson[];
   onLikePost: (postId: string) => void;
   onOpenCreatePost: () => void;
   onNavigateTab: (tab: NavTab) => void;
@@ -38,6 +39,8 @@ interface HomePageProps {
 export const HomePage: React.FC<HomePageProps> = ({
   posts,
   events,
+  artisans,
+  luminaries,
   onLikePost,
   onOpenCreatePost,
   onNavigateTab,
@@ -50,7 +53,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [isDonateOpen, setIsDonateOpen] = useState<boolean>(false);
   const displayEvents = events && events.length > 0 ? events : UPCOMING_EVENTS;
 
-  const featuredArtisan = ARTISANS_DATA[0];
+  const featuredArtisan = (artisans && artisans.length > 0) ? artisans[0] : ARTISANS_DATA[0];
 
   return (
     <div className="space-y-12 animate-fadeIn pb-12">
@@ -323,6 +326,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           founderData={founderData}
           teamMembers={teamMembers}
           orgContact={orgContact}
+          luminaries={luminaries}
         />
       </div>
 

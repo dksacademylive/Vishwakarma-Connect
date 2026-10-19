@@ -8,6 +8,7 @@ import {
 } from '../data/mockData';
 import { SacredScripturesSection } from './SacredScripturesSection';
 import { SACRED_SCRIPTURES } from '../data/scripturesData';
+import { addTempleToFirestore, addTempleBookingToFirestore } from '../firebase';
 import { 
   MapPin, 
   Phone, 
@@ -32,11 +33,13 @@ import {
 
 interface HeritageAndTemplesProps {
   lang: Language;
+  temples?: Temple[];
+  onAddTemple?: (newTemple: Temple) => void;
 }
 
 type HeritageViewMode = 'overview' | 'creation-detail' | 'shilp-vansha' | 'scriptures';
 
-export const HeritageAndTemples: React.FC<HeritageAndTemplesProps> = ({ lang }) => {
+export const HeritageAndTemples: React.FC<HeritageAndTemplesProps> = ({ lang, temples, onAddTemple }) => {
   const isHi = lang === 'hi';
 
   // Sub-view management: 'overview' | 'creation-detail' | 'shilp-vansha' | 'scriptures'
@@ -47,6 +50,7 @@ export const HeritageAndTemples: React.FC<HeritageAndTemplesProps> = ({ lang }) 
 
   // Temples state with In-listing support
   const [templesList, setTemplesList] = useState<Temple[]>(VISHWAKARMA_TEMPLES);
+  const displayTemples = (temples && temples.length > 0) ? temples : templesList;
   const [selectedTempleForBooking, setSelectedTempleForBooking] = useState<Temple | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
   const [showInlistModal, setShowInlistModal] = useState<boolean>(false);
@@ -87,6 +91,14 @@ export const HeritageAndTemples: React.FC<HeritageAndTemplesProps> = ({ lang }) 
 
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedTempleForBooking) {
+      addTempleBookingToFirestore({
+        templeId: selectedTempleForBooking.id,
+        templeName: selectedTempleForBooking.name,
+        rooms: selectedTempleForBooking.dharamshalaRooms,
+        bookedAt: new Date().toISOString(),
+      });
+    }
     setBookingSuccess(true);
     setTimeout(() => {
       setBookingSuccess(false);
@@ -112,7 +124,10 @@ export const HeritageAndTemples: React.FC<HeritageAndTemplesProps> = ({ lang }) 
       verified: true,
     };
 
-    setTemplesList([newTemple, ...templesList]);
+    setTemplesList((prev) => [newTemple, ...prev]);
+    if (onAddTemple) onAddTemple(newTemple);
+    addTempleToFirestore(newTemple);
+
     setInlistSuccess(true);
     setTimeout(() => {
       setInlistSuccess(false);
@@ -798,7 +813,7 @@ export const HeritageAndTemples: React.FC<HeritageAndTemplesProps> = ({ lang }) 
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {templesList.map((temple) => (
+              {displayTemples.map((temple) => (
                 <div
                   key={temple.id}
                   className="bg-white border border-stone-200 rounded-xl overflow-hidden shadow-xs hover:border-amber-300 transition-colors flex flex-col justify-between"

@@ -13,7 +13,8 @@ import {
   IdCardFormConfig,
   MatrimonyFormConfig,
   ArtisanFormConfig,
-  PostFormConfig
+  PostFormConfig,
+  Temple
 } from './types';
 import {
   subscribeSiteConfigFromFirestore,
@@ -21,7 +22,7 @@ import {
   syncAllDataToFirebase,
   checkAndSeedInitialSiteData
 } from './firebase';
-import { INITIAL_POSTS, ARTISANS_DATA, UPCOMING_EVENTS } from './data/mockData';
+import { INITIAL_POSTS, ARTISANS_DATA, UPCOMING_EVENTS, VISHWAKARMA_TEMPLES } from './data/mockData';
 import { HALL_OF_FAME_DATA, HallOfFamePerson, FOUNDER_DATA, TEAM_MEMBERS, FounderInfo, TeamMember } from './data/homeData';
 import {
   DEFAULT_JOBS,
@@ -86,6 +87,14 @@ export default function App() {
       return saved ? JSON.parse(saved) : HALL_OF_FAME_DATA;
     } catch {
       return HALL_OF_FAME_DATA;
+    }
+  });
+  const [temples, setTemples] = useState<Temple[]>(() => {
+    try {
+      const saved = localStorage.getItem('vsm_temples');
+      return saved ? JSON.parse(saved) : VISHWAKARMA_TEMPLES;
+    } catch {
+      return VISHWAKARMA_TEMPLES;
     }
   });
   const [isCreatePostOpen, setIsCreatePostOpen] = useState<boolean>(false);
@@ -259,6 +268,7 @@ export default function App() {
       matrimony_config: DEFAULT_MATRIMONY_CONFIG,
       artisan_config: DEFAULT_ARTISAN_CONFIG,
       post_config: DEFAULT_POST_CONFIG,
+      temples: VISHWAKARMA_TEMPLES,
     });
 
     const unsubEvents = subscribeSiteConfigFromFirestore<SamajEvent[]>('events', (data) => {
@@ -366,6 +376,13 @@ export default function App() {
       }
     });
 
+    const unsubTemples = subscribeSiteConfigFromFirestore<Temple[]>('temples', (data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setTemples(data);
+        localStorage.setItem('vsm_temples', JSON.stringify(data));
+      }
+    });
+
     return () => {
       unsubEvents();
       unsubLuminaries();
@@ -382,6 +399,7 @@ export default function App() {
       unsubPost();
       unsubPosts();
       unsubArtisans();
+      unsubTemples();
     };
   }, []);
 
@@ -530,6 +548,29 @@ export default function App() {
     }
   };
 
+  const handleAddTemple = (newTemple: Temple) => {
+    setTemples((prev) => {
+      const updated = [newTemple, ...prev];
+      try {
+        localStorage.setItem('vsm_temples', JSON.stringify(updated));
+        saveSiteConfigToFirestore('temples', updated);
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+  };
+
+  const handleUpdateTemples = (newTemples: Temple[]) => {
+    setTemples(newTemples);
+    try {
+      localStorage.setItem('vsm_temples', JSON.stringify(newTemples));
+      saveSiteConfigToFirestore('temples', newTemples);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
   const handleUpdateFounderData = (newData: FounderInfo) => {
     setFounderData(newData);
     try {
@@ -658,6 +699,7 @@ export default function App() {
       matrimony_config: matrimonyConfig,
       artisan_config: artisanConfig,
       post_config: postConfig,
+      temples: temples,
     });
   };
 
@@ -716,6 +758,8 @@ export default function App() {
           <HomePage
             posts={posts}
             events={events}
+            artisans={artisans}
+            luminaries={luminaries}
             onLikePost={handleLikePost}
             onOpenCreatePost={() => setIsCreatePostOpen(true)}
             onNavigateTab={setActiveTab}
@@ -770,7 +814,11 @@ export default function App() {
         )}
 
         {activeTab === 'heritage' && (
-          <HeritageAndTemples lang={lang} />
+          <HeritageAndTemples
+            lang={lang}
+            temples={temples}
+            onAddTemple={handleAddTemple}
+          />
         )}
 
         {activeTab === 'luminaries' && (

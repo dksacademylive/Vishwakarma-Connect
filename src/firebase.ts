@@ -547,10 +547,15 @@ export async function syncAllDataToFirebase(allData: Record<string, any>): Promi
 // Check and seed default data to Firestore if not yet populated
 export async function checkAndSeedInitialSiteData(defaults: Record<string, any>): Promise<void> {
   try {
-    const existingFounder = await fetchSiteConfigFromFirestore('founder');
-    if (!existingFounder) {
-      console.log('Seeding initial site configurations to Firebase Firestore...');
-      await syncAllDataToFirebase(defaults);
+    const keys = Object.keys(defaults);
+    for (const key of keys) {
+      if (defaults[key] !== undefined) {
+        const existing = await fetchSiteConfigFromFirestore(key);
+        if (!existing) {
+          console.log(`Seeding initial Firestore configuration for ${key}...`);
+          await saveSiteConfigToFirestore(key, defaults[key]);
+        }
+      }
     }
   } catch (e) {
     console.warn('Initial site data seeding notice:', e);
@@ -692,3 +697,104 @@ export async function checkMembershipEmailExists(email: string): Promise<{ exist
 
   return { exists: false };
 }
+
+// ==========================================
+// 7. EVENT REGISTRATIONS & PASSES SERVICE
+// ==========================================
+export async function addEventRegistrationToFirestore(regData: any): Promise<string | null> {
+  const path = 'event_registrations';
+  try {
+    const colRef = collection(db, path);
+    const docRef = await addDoc(colRef, {
+      ...regData,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+    return null;
+  }
+}
+
+export async function fetchEventRegistrationsFromFirestore(): Promise<any[]> {
+  const path = 'event_registrations';
+  try {
+    const colRef = collection(db, path);
+    const q = query(colRef, limit(100));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.GET, path);
+    return [];
+  }
+}
+
+// ==========================================
+// 8. TEMPLES & DHARAMSHALA IN-LISTING SERVICE
+// ==========================================
+export async function addTempleToFirestore(templeData: any): Promise<string | null> {
+  const path = 'temples';
+  try {
+    const id = templeData.id || `tmp-${Date.now()}`;
+    const docRef = doc(db, path, id);
+    await setDoc(docRef, {
+      ...templeData,
+      id,
+      createdAt: serverTimestamp()
+    }, { merge: true });
+    return id;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+    return null;
+  }
+}
+
+export async function fetchTemplesFromFirestore(): Promise<any[]> {
+  const path = 'temples';
+  try {
+    const colRef = collection(db, path);
+    const snap = await getDocs(colRef);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.GET, path);
+    return [];
+  }
+}
+
+export function subscribeTemplesFromFirestore(onUpdate: (temples: any[]) => void): () => void {
+  const path = 'temples';
+  try {
+    const colRef = collection(db, path);
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        if (list.length > 0) {
+          onUpdate(list);
+        }
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, path);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to subscribe temples:', err);
+    return () => {};
+  }
+}
+
+export async function addTempleBookingToFirestore(bookingData: any): Promise<string | null> {
+  const path = 'temple_bookings';
+  try {
+    const colRef = collection(db, path);
+    const docRef = await addDoc(colRef, {
+      ...bookingData,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+    return null;
+  }
+}
+

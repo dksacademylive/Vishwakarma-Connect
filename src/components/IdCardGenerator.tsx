@@ -3,6 +3,7 @@ import { Language, SamajIdCardData, IdCardFormConfig } from '../types';
 import { DEFAULT_IDCARD_CONFIG } from '../data/formsData';
 import { Award, Download, Printer, CheckCircle, ShieldCheck, Upload, Camera, Settings, Mail } from 'lucide-react';
 import { checkMembershipEmailExists, addMembershipToFirestore } from '../firebase';
+import { compressImageFile } from '../utils/imageCompressor';
 import { AlreadyRegisteredModal } from './AlreadyRegisteredModal';
 
 interface IdCardGeneratorProps {
@@ -53,14 +54,20 @@ export const IdCardGenerator: React.FC<IdCardGeneratorProps> = ({ lang, idCardCo
     const file = e.target.files?.[0];
     if (file) {
       setPhotoFileName(file.name);
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        const result = uploadEvent.target?.result as string;
-        if (result) {
-          setFormData((prev) => ({ ...prev, photoUrl: result }));
-        }
-      };
-      reader.readAsDataURL(file);
+      compressImageFile(file, 400, 500, 0.8)
+        .then((compressed) => {
+          setFormData((prev) => ({ ...prev, photoUrl: compressed }));
+        })
+        .catch(() => {
+          const reader = new FileReader();
+          reader.onload = (uploadEvent) => {
+            const result = uploadEvent.target?.result as string;
+            if (result) {
+              setFormData((prev) => ({ ...prev, photoUrl: result }));
+            }
+          };
+          reader.readAsDataURL(file);
+        });
     }
   };
 

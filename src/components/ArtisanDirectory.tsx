@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Artisan, Language, ArtisanFormConfig } from '../types';
 import { DEFAULT_ARTISAN_CONFIG } from '../data/formsData';
+import { compressImageFile } from '../utils/imageCompressor';
 import {
   Search,
   MapPin,
@@ -102,13 +103,20 @@ export const ArtisanDirectory: React.FC<ArtisanDirectoryProps> = ({
     setImageFileName(file.name);
     setImageFileSize(formattedSize);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setUploadedImagePreview(result);
-      setNewArtisanForm((prev) => ({ ...prev, image: result }));
-    };
-    reader.readAsDataURL(file);
+    compressImageFile(file, 800, 800, 0.75)
+      .then((compressed) => {
+        setUploadedImagePreview(compressed);
+        setNewArtisanForm((prev) => ({ ...prev, image: compressed }));
+      })
+      .catch(() => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setUploadedImagePreview(result);
+          setNewArtisanForm((prev) => ({ ...prev, image: result }));
+        };
+        reader.readAsDataURL(file);
+      });
   };
 
   const handleRemoveUploadedImage = () => {

@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { SamajEvent, Language, EventRegistration } from '../types';
+import { compressImageFile } from '../utils/imageCompressor';
+import { addEventRegistrationToFirestore } from '../firebase';
 import {
   Calendar,
   Clock,
@@ -139,6 +141,9 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
       passNumber,
     };
 
+    // Automatically save registration pass to Firebase Firestore backend
+    addEventRegistrationToFirestore(newReg);
+
     setConfirmedPass({
       registration: newReg,
       event: selectedEventForJoin,
@@ -163,13 +168,20 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     setImageFileName(file.name);
     setImageFileSize(formattedSize);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setUploadedImagePreview(result);
-      setNewEventForm((prev) => ({ ...prev, bannerImage: result }));
-    };
-    reader.readAsDataURL(file);
+    compressImageFile(file, 900, 600, 0.75)
+      .then((compressed) => {
+        setUploadedImagePreview(compressed);
+        setNewEventForm((prev) => ({ ...prev, bannerImage: compressed }));
+      })
+      .catch(() => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setUploadedImagePreview(result);
+          setNewEventForm((prev) => ({ ...prev, bannerImage: result }));
+        };
+        reader.readAsDataURL(file);
+      });
   };
 
   const handleRemoveUploadedImage = () => {

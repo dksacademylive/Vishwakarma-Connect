@@ -9,7 +9,8 @@ import {
   SOCIAL_MEDIA_LINKS,
   CommunityBlog,
   FounderInfo,
-  TeamMember
+  TeamMember,
+  HallOfFamePerson
 } from '../data/homeData';
 import {
   Award,
@@ -54,6 +55,7 @@ interface HomeEnhancementsProps {
   founderData?: FounderInfo;
   teamMembers?: TeamMember[];
   orgContact?: OrgContactInfo;
+  luminaries?: HallOfFamePerson[];
 }
 
 export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
@@ -66,10 +68,12 @@ export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
   founderData,
   teamMembers,
   orgContact,
+  luminaries,
 }) => {
   const isHi = lang === 'hi';
   const currentFounder = founderData || FOUNDER_DATA;
   const currentTeam = teamMembers || TEAM_MEMBERS;
+  const currentLuminaries = (luminaries && luminaries.length > 0) ? luminaries : HALL_OF_FAME_DATA;
   const [selectedBlog, setSelectedBlog] = useState<CommunityBlog | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
 
@@ -379,7 +383,7 @@ export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-          {HALL_OF_FAME_DATA.map((person) => (
+          {currentLuminaries.slice(0, 4).map((person) => (
             <div
               key={person.id}
               className="bg-white/95 border border-amber-200/90 rounded-2xl p-6 hover:border-amber-400 hover:shadow-md transition-all space-y-4"
@@ -416,7 +420,7 @@ export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
                   प्रमुख ऐतिहासिक कृतियां:
                 </div>
                 <ul className="text-xs text-stone-700 space-y-1 font-hindi">
-                  {person.famousWorks.map((work, idx) => (
+                  {(person.famousWorks || []).map((work: string, idx: number) => (
                     <li key={idx} className="flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0" />
                       <span>{work}</span>
@@ -427,7 +431,7 @@ export const HomeEnhancements: React.FC<HomeEnhancementsProps> = ({
 
               {/* Honors Tags */}
               <div className="flex flex-wrap gap-1.5 pt-2 border-t border-stone-100">
-                {person.honors.map((hon, idx) => (
+                {(person.honors || []).map((hon: string, idx: number) => (
                   <span
                     key={idx}
                     className="text-[10px] font-bold text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300"

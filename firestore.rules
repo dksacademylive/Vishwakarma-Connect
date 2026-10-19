@@ -50,6 +50,21 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Temples & Dharamshala In-listing
+    match /temples/{templeId} {
+      allow read, write: if true;
+    }
+
+    // Event Registrations & Passes
+    match /event_registrations/{regId} {
+      allow read, write: if true;
+    }
+
+    // Temple Dharamshala Bookings
+    match /temple_bookings/{bookingId} {
+      allow read, write: if true;
+    }
+
     // Connection test document
     match /test/{docId} {
       allow read, write: if true;

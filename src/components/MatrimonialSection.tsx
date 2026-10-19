@@ -12,6 +12,7 @@ import {
   StoredMatrimonialProfile
 } from '../firebase';
 import { AlreadyRegisteredModal } from './AlreadyRegisteredModal';
+import { compressImageFile } from '../utils/imageCompressor';
 import type { ConfirmationResult } from 'firebase/auth';
 import {
   Heart,
@@ -224,15 +225,25 @@ export const MatrimonialSection: React.FC<MatrimonialSectionProps> = ({ lang, ma
         alert(isHi ? 'कृपया 5MB से छोटी फाइल अपलोड करें।' : 'Please upload an image smaller than 5MB.');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        setNewProfileForm((prev) => ({
-          ...prev,
-          photo: uploadEvent.target?.result as string,
-          photoFileName: file.name,
-        }));
-      };
-      reader.readAsDataURL(file);
+      compressImageFile(file, 600, 700, 0.75)
+        .then((compressed) => {
+          setNewProfileForm((prev) => ({
+            ...prev,
+            photo: compressed,
+            photoFileName: file.name,
+          }));
+        })
+        .catch(() => {
+          const reader = new FileReader();
+          reader.onload = (uploadEvent) => {
+            setNewProfileForm((prev) => ({
+              ...prev,
+              photo: uploadEvent.target?.result as string,
+              photoFileName: file.name,
+            }));
+          };
+          reader.readAsDataURL(file);
+        });
     }
   };
 

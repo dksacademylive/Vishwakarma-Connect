@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Language, JobItem, ScholarshipItem, WorkshopItem } from '../types';
 import { DEFAULT_JOBS, DEFAULT_SCHOLARSHIPS, DEFAULT_WORKSHOPS } from '../data/formsData';
 import { addApplicationToFirestore } from '../firebase';
+import { compressImageFile } from '../utils/imageCompressor';
 import {
   GraduationCap,
   Briefcase,
@@ -156,12 +157,18 @@ export const YouthAndJobs: React.FC<YouthAndJobsProps> = ({
     setPhotoFileName(file.name);
     setPhotoFileSize(formattedSize);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setUploadedPhotoPreview(result);
-    };
-    reader.readAsDataURL(file);
+    compressImageFile(file, 600, 600, 0.75)
+      .then((compressed) => {
+        setUploadedPhotoPreview(compressed);
+      })
+      .catch(() => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setUploadedPhotoPreview(result);
+        };
+        reader.readAsDataURL(file);
+      });
   };
 
   const handleRemovePhoto = () => {

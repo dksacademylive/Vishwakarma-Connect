@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Post, Language, PostFormConfig } from '../types';
 import { DEFAULT_POST_CONFIG } from '../data/formsData';
+import { compressImageFile } from '../utils/imageCompressor';
 import { X, Image as ImageIcon, Send, Settings, Upload, Trash2 } from 'lucide-react';
 
 interface CreatePostModalProps {
@@ -42,13 +43,20 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         return;
       }
       setFileName(file.name);
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const result = ev.target?.result as string;
-        setUploadedImagePreview(result);
-        setImageUrl('');
-      };
-      reader.readAsDataURL(file);
+      compressImageFile(file, 800, 800, 0.75)
+        .then((compressed) => {
+          setUploadedImagePreview(compressed);
+          setImageUrl('');
+        })
+        .catch(() => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const result = ev.target?.result as string;
+            setUploadedImagePreview(result);
+            setImageUrl('');
+          };
+          reader.readAsDataURL(file);
+        });
     }
   };
 

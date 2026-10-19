@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { HallOfFamePerson } from '../data/homeData';
 import { Language } from '../types';
+import { compressImageFile } from '../utils/imageCompressor';
 import {
   Award,
   Plus,
@@ -98,13 +99,20 @@ export const LuminariesSection: React.FC<LuminariesSectionProps> = ({
     setImageFileName(file.name);
     setImageFileSize(formattedSize);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setUploadedImagePreview(result);
-      setNewLuminaryForm((prev) => ({ ...prev, photo: result }));
-    };
-    reader.readAsDataURL(file);
+    compressImageFile(file, 800, 800, 0.75)
+      .then((compressed) => {
+        setUploadedImagePreview(compressed);
+        setNewLuminaryForm((prev) => ({ ...prev, photo: compressed }));
+      })
+      .catch(() => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setUploadedImagePreview(result);
+          setNewLuminaryForm((prev) => ({ ...prev, photo: result }));
+        };
+        reader.readAsDataURL(file);
+      });
   };
 
   const handleRemoveUploadedImage = () => {

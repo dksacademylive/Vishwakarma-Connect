@@ -126,6 +126,31 @@
         "state": { "type": "string" }
       },
       "required": ["membershipId", "fullName", "email"]
+    },
+    "templeItem": {
+      "title": "TempleItem",
+      "description": "Vishwakarma community sacred temples and dharamshalas",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "contact": { "type": "string" }
+      },
+      "required": ["id", "name", "location"]
+    },
+    "eventRegistration": {
+      "title": "EventRegistration",
+      "description": "Event participant passes and RSVPs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "eventId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "mobile": { "type": "string" },
+        "passNumber": { "type": "string" }
+      },
+      "required": ["id", "eventId", "fullName", "mobile"]
     }
   },
   "firestore": {
@@ -160,6 +185,14 @@
     "/memberships/{membershipId}": {
       "schema": "membershipRecord",
       "description": "Registered community memberships with unique email validation"
+    },
+    "/temples/{templeId}": {
+      "schema": "templeItem",
+      "description": "Sacred temples and guest houses directory"
+    },
+    "/event_registrations/{regId}": {
+      "schema": "eventRegistration",
+      "description": "Event attendee passes and RSVPs"
     }
   }
 }
