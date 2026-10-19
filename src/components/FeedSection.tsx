@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   Image as ImageIcon,
   ChevronRight,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 
 interface FeedSectionProps {
@@ -27,6 +28,8 @@ interface FeedSectionProps {
   onSelectArtisan: (artisanId: string) => void;
   onNavigateTab?: (tab: NavTab) => void;
   lang: Language;
+  isAdmin?: boolean;
+  onDeletePost?: (postId: string) => Promise<void> | void;
 }
 
 export const FeedSection: React.FC<FeedSectionProps> = ({
@@ -37,12 +40,16 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
   onSelectArtisan,
   onNavigateTab,
   lang,
+  isAdmin,
+  onDeletePost,
 }) => {
   const isHi = lang === 'hi';
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [feedDeleteConfirmId, setFeedDeleteConfirmId] = useState<string | null>(null);
+  const [isDeletingFeedPost, setIsDeletingFeedPost] = useState<boolean>(false);
   const [isDonateOpen, setIsDonateOpen] = useState<boolean>(false);
 
   const filteredPosts = posts.filter((post) => {
@@ -217,6 +224,51 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
                         </div>
                       </div>
                     </div>
+
+                    {/* Admin Moderation Delete Button if logged in */}
+                    {isAdmin && onDeletePost && (
+                      <div className="shrink-0">
+                        {feedDeleteConfirmId === post.id ? (
+                          <div className="flex items-center gap-1.5 bg-red-50 border border-red-300 p-1 rounded-xl animate-fadeIn shadow-2xs">
+                            <span className="text-[11px] font-bold text-red-900 whitespace-nowrap">हटाएं?</span>
+                            <button
+                              type="button"
+                              disabled={isDeletingFeedPost}
+                              onClick={async () => {
+                                setIsDeletingFeedPost(true);
+                                try {
+                                  await onDeletePost(post.id);
+                                } finally {
+                                  setIsDeletingFeedPost(false);
+                                  setFeedDeleteConfirmId(null);
+                                }
+                              }}
+                              className="px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                            >
+                              {isDeletingFeedPost ? 'हट रहा है...' : 'हाँ'}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isDeletingFeedPost}
+                              onClick={() => setFeedDeleteConfirmId(null)}
+                              className="px-1.5 py-0.5 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                            >
+                              रद्द
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setFeedDeleteConfirmId(post.id)}
+                            className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-900 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs active:scale-95"
+                            title="एडमिन: यह पोस्ट समाज मंच से हटाएं"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                            <span className="hidden sm:inline font-bold">हटाएं (Admin)</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Post Content */}

@@ -20,7 +20,8 @@ import {
   subscribeSiteConfigFromFirestore,
   saveSiteConfigToFirestore,
   syncAllDataToFirebase,
-  checkAndSeedInitialSiteData
+  checkAndSeedInitialSiteData,
+  deletePostFromFirestore
 } from './firebase';
 import { INITIAL_POSTS, ARTISANS_DATA, UPCOMING_EVENTS, VISHWAKARMA_TEMPLES } from './data/mockData';
 import { HALL_OF_FAME_DATA, HallOfFamePerson, FOUNDER_DATA, TEAM_MEMBERS, FounderInfo, TeamMember } from './data/homeData';
@@ -476,6 +477,24 @@ export default function App() {
       saveSiteConfigToFirestore('posts', newPosts);
     } catch (e) {
       console.warn(e);
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    setPosts((prev) => {
+      const updated = prev.filter((p) => p.id !== postId);
+      try {
+        localStorage.setItem('vsm_posts', JSON.stringify(updated));
+        saveSiteConfigToFirestore('posts', updated);
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    try {
+      await deletePostFromFirestore(postId);
+    } catch (e) {
+      console.warn('Failed to delete post from Firestore:', e);
     }
   };
 

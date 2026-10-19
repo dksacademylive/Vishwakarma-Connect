@@ -40,6 +40,7 @@ import {
   Share2,
   Globe,
   MessageCircle,
+  MessageSquare,
   Youtube,
   Facebook,
   Twitter,
@@ -69,7 +70,8 @@ import {
   fetchSiteConfigFromFirestore,
   syncAllDataToFirebase,
   subscribeApplicationsFromFirestore,
-  subscribeMatrimonialProfilesFromFirestore
+  subscribeMatrimonialProfilesFromFirestore,
+  deletePostFromFirestore
 } from '../firebase';
 import { FounderInfo, TeamMember, HallOfFamePerson, HALL_OF_FAME_DATA } from '../data/homeData';
 import { MATRIMONIAL_PROFILES } from '../data/mockData';
@@ -198,6 +200,7 @@ interface AdminPanelModalProps {
 export type AdminTab =
   | 'applications'
   | 'matrimony'
+  | 'posts'
   | 'multiadmin'
   | 'luminaries'
   | 'president'
@@ -1475,6 +1478,51 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setPinChangeMsg('एडमिन पिन सफलतापूर्वक बदल दिया गया!');
   };
 
+  // 9. Community Posts (ताज़ा चर्चा व जनसंवाद) Moderation Handlers
+  const [postSearchQuery, setPostSearchQuery] = useState<string>('');
+  const [postCategoryFilter, setPostCategoryFilter] = useState<string>('all');
+  const [expandedCommentsMap, setExpandedCommentsMap] = useState<Record<string, boolean>>({});
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+  const [commentToDelete, setCommentToDelete] = useState<{ postId: string; commentId: string } | null>(null);
+
+  const handleConfirmDeletePost = async (postId: string) => {
+    try {
+      setDeletingPostId(postId);
+      const currentPosts = posts || [];
+      const updated = currentPosts.filter((p) => p.id !== postId);
+      if (onUpdatePosts) {
+        onUpdatePosts(updated);
+      }
+      await deletePostFromFirestore(postId);
+      showToast('✅ पोस्ट समाज मंच व बैकएंड से सफलतापूर्वक डिलीट कर दी गई है!');
+    } catch (e) {
+      console.warn('Failed to delete post doc from Firestore:', e);
+      showToast('❌ पोस्ट डिलीट करने में त्रुटि आई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setDeletingPostId(null);
+      setPostToDelete(null);
+    }
+  };
+
+  const handleConfirmDeleteComment = (postId: string, commentId: string) => {
+    const currentPosts = posts || [];
+    const updated = currentPosts.map((p) => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          comments: p.comments.filter((c) => c.id !== commentId),
+        };
+      }
+      return p;
+    });
+    if (onUpdatePosts) {
+      onUpdatePosts(updated);
+    }
+    setCommentToDelete(null);
+    showToast('✅ अवांछित टिप्पणी हटा दी गई!');
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -1744,6 +1792,26 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   activeTab === 'matrimony' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
                 }`}>
                   {firebaseMatrimonyProfiles.length > 0 ? firebaseMatrimonyProfiles.length : localMatrimonialProfiles.length}
+                </span>
+              </button>
+
+              {/* Tab: Community Discussion Posts / ताज़ा चर्चा व जनसंवाद */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('posts')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs shrink-0 ${
+                  activeTab === 'posts'
+                    ? 'bg-amber-900 text-white shadow-xs ring-2 ring-amber-600/40'
+                    : 'bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200'
+                }`}
+                title="ताज़ा चर्चा व जनसंवाद पोस्ट्स मॉडरेशन एवं डिलीट (Community Posts & Moderation)"
+              >
+                <MessageSquare className={`w-3.5 h-3.5 ${activeTab === 'posts' ? 'text-amber-300' : 'text-amber-700'}`} />
+                <span>ताज़ा चर्चा व पोस्ट्स</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  activeTab === 'posts' ? 'bg-amber-800 text-amber-200' : 'bg-stone-100 text-stone-600 border border-stone-200'
+                }`}>
+                  {(posts || []).length}
                 </span>
               </button>
 
@@ -2448,6 +2516,308 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <p className="text-xs">कोई वैवाहिक बायोडाटा नहीं मिला।</p>
                       </div>
                     )}
+                  </div>
+                );
+              })()}
+
+              {/* ======================================================== */}
+              {/* TAB: COMMUNITY DISCUSSION POSTS MODERATION (ताज़ा चर्चा व जनसंवाद) */}
+              {/* ======================================================== */}
+              {activeTab === 'posts' && (() => {
+                const allPosts = posts || [];
+                const filteredPosts = allPosts.filter((post) => {
+                  const matchesCat = postCategoryFilter === 'all' || post.category === postCategoryFilter;
+                  const q = postSearchQuery.toLowerCase().trim();
+                  const matchesQuery = !q ||
+                    post.author.toLowerCase().includes(q) ||
+                    post.content.toLowerCase().includes(q) ||
+                    post.city.toLowerCase().includes(q) ||
+                    post.roleOrGotra.toLowerCase().includes(q);
+                  return matchesCat && matchesQuery;
+                });
+
+                return (
+                  <div className="space-y-5">
+                    {/* Header Card */}
+                    <div className="bg-gradient-to-r from-amber-50 via-white to-amber-50/50 p-4 sm:p-5 rounded-2xl border border-amber-200 shadow-2xs space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <h4 className="text-base font-bold text-stone-900 font-display flex items-center gap-2">
+                              <MessageSquare className="w-5 h-5 text-amber-700" />
+                              <span>ताज़ा चर्चा व जनसंवाद पोस्ट्स मॉडरेशन (Community Posts Control)</span>
+                            </h4>
+                          </div>
+                          <p className="text-xs text-stone-600">
+                            पब्लिक या समाज बंधुओं द्वारा डाली गई पोस्ट्स को देखें। यदि कोई पोस्ट समाज के नियमों या गरिमा के अनुकूल नहीं है, तो उसे यहाँ से तुरंत डिलीट करें।
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                          <span className="px-3 py-1.5 bg-amber-100 text-amber-900 font-bold text-xs rounded-xl border border-amber-300">
+                            कुल पोस्ट्स: {allPosts.length}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Search and Filters Bar */}
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2 border-t border-amber-200/60">
+                        <div className="sm:col-span-7 relative">
+                          <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={postSearchQuery}
+                            onChange={(e) => setPostSearchQuery(e.target.value)}
+                            placeholder="लेखक का नाम, शहर, गोत्र या पोस्ट के शब्दों से खोजें..."
+                            className="w-full pl-9 pr-8 py-2 bg-white border border-stone-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                          />
+                          {postSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setPostSearchQuery('')}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="sm:col-span-5 flex items-center gap-2">
+                          <Filter className="w-4 h-4 text-stone-400 shrink-0 hidden sm:block" />
+                          <select
+                            value={postCategoryFilter}
+                            onChange={(e) => setPostCategoryFilter(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-xs font-bold text-stone-700 focus:ring-2 focus:ring-amber-500"
+                          >
+                            <option value="all">सभी श्रेणियां ({allPosts.length})</option>
+                            <option value="general">सामान्य विचार</option>
+                            <option value="shilp">स्थापत्य, शिल्प व कला</option>
+                            <option value="youth">शिक्षा, करियर व युवा</option>
+                            <option value="social">सामाजिक चर्चा व सेवा</option>
+                            <option value="utsav">धार्मिक व उत्सव</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Admin Tip */}
+                      <div className="p-3 bg-red-50/70 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-900">
+                        <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>एडमिन दिशानिर्देश:</strong> यदि किसी पोस्ट में भ्रामक जानकारी, अवांछित प्रचार, या समाज विरोधी भाषा है, तो नीचे दिए गए लाल <strong>"हटाएं / डिलीट करें"</strong> बटन पर क्लिक करें। पोस्ट सभी पब्लिक पृष्ठों, होमपेज व फ़ायरबेस बैकएंड से तुरंत डिलीट हो जाएगी।
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Posts Cards Grid */}
+                    <div className="space-y-4">
+                      {filteredPosts.map((post) => {
+                        const isCommentsOpen = !!expandedCommentsMap[post.id];
+                        return (
+                          <div
+                            key={post.id}
+                            className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 shadow-xs hover:border-amber-300 transition-all space-y-4"
+                          >
+                            {/* Card Top: Author & Delete Button */}
+                            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-stone-100 pb-3">
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={post.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'}
+                                  alt={post.author}
+                                  className="w-10 h-10 rounded-full object-cover border border-amber-300 shrink-0"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h5 className="font-bold text-stone-900 text-sm">
+                                      {post.author}
+                                    </h5>
+                                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                                      {post.roleOrGotra}
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-stone-500 flex items-center gap-2 mt-0.5">
+                                    <span>📍 {post.city}</span>
+                                    <span>·</span>
+                                    <span>🕒 {post.createdAt}</span>
+                                    <span>·</span>
+                                    <span className="font-semibold text-stone-700 capitalize">
+                                      वर्ग: {post.category === 'shilp' ? 'शिल्प व कला' : post.category === 'youth' ? 'शिक्षा व युवा' : post.category === 'utsav' ? 'धार्मिक उत्सव' : post.category === 'social' ? 'सामाजिक संवाद' : 'सामान्य विचार'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Prominent Red Delete Post Button with In-Card Confirmation */}
+                              <div className="flex items-center gap-2">
+                                {postToDelete === post.id ? (
+                                  <div className="flex items-center gap-1.5 bg-red-50 border border-red-300 p-1.5 rounded-xl animate-fadeIn">
+                                    <span className="text-[11px] font-bold text-red-900 whitespace-nowrap">डिलीट करें?</span>
+                                    <button
+                                      type="button"
+                                      disabled={deletingPostId === post.id}
+                                      onClick={() => handleConfirmDeletePost(post.id)}
+                                      className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                      <span>{deletingPostId === post.id ? 'हटाई जा रही है...' : 'हाँ, हटाएं'}</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={deletingPostId === post.id}
+                                      onClick={() => setPostToDelete(null)}
+                                      className="px-2 py-1 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                                    >
+                                      रद्द
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPostToDelete(post.id)}
+                                    className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs hover:shadow-sm cursor-pointer active:scale-95"
+                                    title="यह पोस्ट समाज मंच से हमेशा के लिए हटाएं"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-white" />
+                                    <span>पोस्ट डिलीट करें</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Post Text Content */}
+                            <div className="text-stone-800 text-sm leading-relaxed whitespace-pre-line font-hindi">
+                              {post.content}
+                            </div>
+
+                            {/* Attached Image Preview if present */}
+                            {post.image && (
+                              <div className="relative rounded-xl overflow-hidden border border-stone-200 max-h-80 max-w-md bg-stone-100">
+                                <img
+                                  src={post.image}
+                                  alt="Post attachment"
+                                  className="w-full h-auto object-cover max-h-80"
+                                  referrerPolicy="no-referrer"
+                                />
+                              </div>
+                            )}
+
+                            {/* Card Footer: Metrics and Comments Toggle */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 text-xs">
+                              <div className="flex items-center gap-3">
+                                <span className="inline-flex items-center gap-1 text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                                  <Heart className="w-3.5 h-3.5 fill-rose-600" />
+                                  <span>{post.likes} लाइक्स</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedCommentsMap((prev) => ({ ...prev, [post.id]: !prev[post.id] }))}
+                                  className="inline-flex items-center gap-1 text-stone-700 font-bold bg-stone-100 hover:bg-stone-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5 text-stone-600" />
+                                  <span>{post.comments.length} टिप्पणियां</span>
+                                  <span className="text-[10px] text-amber-800 ml-1">
+                                    {isCommentsOpen ? '▲ बंद करें' : '▼ देखें / मॉडरेशन'}
+                                  </span>
+                                </button>
+                              </div>
+
+                              <span className="text-[10px] font-mono text-stone-400">
+                                ID: {post.id}
+                              </span>
+                            </div>
+
+                            {/* Expanded Comments List with Comment Deletion */}
+                            {isCommentsOpen && (
+                              <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-2.5 animate-fadeIn">
+                                <div className="text-xs font-bold text-stone-700 flex items-center justify-between">
+                                  <span>💬 प्राप्त टिप्पणियां ({post.comments.length}):</span>
+                                  <span className="text-[10px] font-normal text-stone-500">
+                                    अवांछित टिप्पणी को 'हटाएं' बटन से डिलीट करें
+                                  </span>
+                                </div>
+
+                                {post.comments.length === 0 ? (
+                                  <p className="text-xs text-stone-400 italic py-2 text-center">
+                                    इस पोस्ट पर अभी तक कोई टिप्पणी नहीं है।
+                                  </p>
+                                ) : (
+                                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                    {post.comments.map((comment) => (
+                                      <div
+                                        key={comment.id}
+                                        className="bg-white p-2.5 rounded-lg border border-stone-200 flex items-start justify-between gap-3 text-xs"
+                                      >
+                                        <div className="space-y-0.5 min-w-0">
+                                          <div className="flex items-center gap-1.5">
+                                            <strong className="text-stone-900">{comment.author}</strong>
+                                            <span className="text-[10px] text-stone-500">({comment.city})</span>
+                                            <span className="text-[10px] text-stone-400">· {comment.timeAgo}</span>
+                                          </div>
+                                          <p className="text-stone-700">{comment.content}</p>
+                                        </div>
+
+                                        {commentToDelete?.postId === post.id && commentToDelete?.commentId === comment.id ? (
+                                          <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 p-1 rounded-lg shrink-0">
+                                            <span className="text-[10px] text-red-800 font-bold whitespace-nowrap">टिप्पणी हटाएं?</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleConfirmDeleteComment(post.id, comment.id)}
+                                              className="px-1.5 py-0.5 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-bold cursor-pointer"
+                                            >
+                                              हाँ
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => setCommentToDelete(null)}
+                                              className="px-1.5 py-0.5 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded text-[10px] cursor-pointer"
+                                            >
+                                              रद्द
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={() => setCommentToDelete({ postId: post.id, commentId: comment.id })}
+                                            className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1.5 rounded-md transition-colors cursor-pointer shrink-0"
+                                            title="यह टिप्पणी हटाएं"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {filteredPosts.length === 0 && (
+                        <div className="bg-white p-12 rounded-2xl border border-dashed border-stone-300 text-center space-y-3">
+                          <MessageSquare className="w-10 h-10 text-stone-300 mx-auto" />
+                          <h5 className="font-bold text-stone-700 text-sm">
+                            {postSearchQuery || postCategoryFilter !== 'all'
+                              ? 'खोज मापदंड के अनुसार कोई पोस्ट नहीं मिली।'
+                              : 'अभी समाज मंच पर कोई पोस्ट उपलब्ध नहीं है।'}
+                          </h5>
+                          {(postSearchQuery || postCategoryFilter !== 'all') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPostSearchQuery('');
+                                setPostCategoryFilter('all');
+                              }}
+                              className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold cursor-pointer"
+                            >
+                              सभी फ़िल्टर साफ़ करें
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
